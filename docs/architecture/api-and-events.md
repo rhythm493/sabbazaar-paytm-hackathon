@@ -11,7 +11,7 @@ All endpoints are versioned under `/v1` and scoped to the authenticated/seeded m
 - `GET /v1/store`
 - `PATCH /v1/store`
 - `GET /v1/channels`
-- `POST /v1/channels/{channel}/simulate/connect`
+- `GET /v1/channels/shopify/status`
 
 ### Ingestion and catalogue
 
@@ -47,7 +47,7 @@ All endpoints are versioned under `/v1` and scoped to the authenticated/seeded m
 - `GET /v1/orders/{id}`
 - `GET /v1/inventory`
 - `POST /v1/inventory/adjustments` — manual adjustment with audit reason
-- `POST /v1/simulators/{channel}/orders` — demo-only inbound order fixture
+- `POST /v1/dev/shopify/order-fixture` — demo/development only, omitted unless order ingestion is implemented
 
 ### Activity and health
 
@@ -105,4 +105,4 @@ Event consumers must tolerate additional fields and reject unsupported major/sch
 
 ## Demo-only surfaces
 
-Simulator endpoints and failure-injection controls must be unavailable or separately protected outside demo/development mode. The UI must label their outputs as simulated.
+Development fixtures must be unavailable or separately protected outside demo/development mode. Do not present a fallback catalog draft or recorded Shopify response as a newly created live product.

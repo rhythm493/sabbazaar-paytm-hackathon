@@ -34,14 +34,14 @@
 - Agent code cannot create a connector job without the policy/application service.
 - Approval is invalidated if the listing payload changes.
 - Repeated submission with the same idempotency key does not create duplicate listings.
-- Each channel independently shows queued, publishing, live, or failed state.
-- All simulated results are visibly labelled.
+- Shopify shows queued, publishing, live/draft, or failed state honestly.
+- If a recorded/fallback result is shown, it is visibly labelled as fallback rather than a newly created product.
 
 ## Flow 3: receive order and synchronize stock
 
 ### Steps
 
-1. Demo controller injects an order into a channel simulator.
+1. Optional stretch: Shopify webhook/order fixture is injected.
 2. Connector normalizes the event.
 3. Commerce service persists the order and inventory ledger entry atomically.
 4. Stock Keeper identifies every active listing for the variant.
@@ -52,7 +52,7 @@
 - The normalized order retains its external channel/order IDs.
 - Processing the source event twice produces one order and one stock decrement.
 - Inventory arithmetic is deterministic domain code.
-- Every active channel receives the same derived available quantity.
+- If implemented, Shopify inventory receives the derived quantity.
 - Failed synchronization is visible and can retry without another decrement.
 - Uncertain/negative stock pauses listings and asks for reconciliation.
 

@@ -25,7 +25,7 @@ Replace placeholders with verified commands once the application exists.
 - API liveness and readiness pass.
 - Worker can claim a test/no-op job.
 - Database migration version is current.
-- All four connector simulators report ready.
+- Shopify authentication is checked with a read-only query; no health check creates or modifies products.
 - Model or deterministic fallback is ready.
 - Speech or prepared text fallback is ready.
 - Activity timeline starts from expected seed state.
@@ -36,7 +36,7 @@ Run the full script in `docs/product/demo-script.md` three consecutive times aft
 
 ## During an incident
 
-1. State the issue honestly; do not present stale/simulated output as live behavior without labelling it.
+1. State the issue honestly; do not present fallback output as a newly created Shopify product.
 2. Use visible retry/recovery if it strengthens the product story and fits the time budget.
 3. Otherwise switch to the deterministic local fallback.
 4. Use the backup recording only when interactive fallback is not viable.

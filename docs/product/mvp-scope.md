@@ -1,90 +1,100 @@
 # MVP scope
 
-## Product outcome
+## Six-hour outcome
 
-Demonstrate that one bounded AI teammate can help a small shop create a catalogue, publish it across multiple simulated marketplaces, receive an order, and safely keep stock synchronized—with the merchant retaining control of consequential actions.
+Demonstrate the narrowest end-to-end path that proves the SabBazaar idea with a real first integration:
 
-## Primary persona
+1. A merchant uploads a product image or bill.
+2. The Catalogue Builder creates a structured draft.
+3. The merchant reviews and corrects missing facts.
+4. The merchant approves publication.
+5. SabBazaar creates the product in the Shopify development store.
+6. The UI shows the Shopify URL/result and a complete local audit trail.
 
-An owner-operated Indian retail shop with many physical products, limited time, one phone, and little appetite for learning multiple marketplace dashboards. The demo persona is Meena, a saree-shop owner in Pune.
+Paytm is not integrated for this event. Other marketplaces are not critical-path for the six-hour build.
 
-## Must have
+## Must have in 6 hours
 
-### Merchant experience
+### Merchant experience — Kedar
 
-- Seeded/single-merchant onboarding and store profile
-- Product/rack image or bill upload
-- Browser voice/text request or Soundbox-style simulator
-- AI-created product drafts with confidence/missing fields
-- Manual review, correction, and approval
-- Channel selection and first-publication approval
-- Unified listing status, orders, approvals, and activity timeline
-- Visible `SIMULATED` labelling for external channels
+- Responsive React single-page dashboard
+- One seeded store/profile
+- Upload or select a product image/fixture
+- Product draft review/editor
+- Clear missing-field warnings
+- Approve/reject controls
+- Shopify publication status and result link
+- Simple activity timeline
+- Manual fallback for catalogue creation
 
-### Intelligence
+### Intelligence — Harsimar
 
-- Catalogue Builder structured workflow
-- Listing Specialist channel transformations
-- Order Desk routine factual question path plus escalation path
-- Stock Keeper triggered by confirmed normalized order
-- Deterministic policy gate and typed proposed actions
-- Fake/cached model fallback for a repeatable demo
+- OpenAI-compatible vision/general LLM client using `https://api.goedelmachines.com/v1`
+- Strict structured product-draft response
+- Text fallback when the external model is unavailable
+- Sarvam speech input as a thin adapter or canned/pre-recorded path
+- Confidence, evidence, and missing-field handling
+- No autonomous execution before approval
 
-### Commerce and connectors
+### Commerce and connectors — Ridam
 
-- Canonical product, variant, price, listing, order, and inventory models
-- Append-only inventory ledger and duplicate-event protection
-- Durable job/outbox and retry behavior
-- Shared connector contract
-- ONDC, Amazon, Meesho, and Google Business simulators
-- Audit trail from agent proposal through connector result
+- FastAPI API incrementally backed by SQLite
+- Canonical product/listing/action/audit tables
+- Shopify development-store connection via local environment variables
+- Product creation against Shopify Admin API
+- Basic job status, idempotency key, and audit events
+- Synthetic seed data and reset command if time permits
+- Opt-in Shopify smoke check; default tests remain offline
 
-## Golden path
+## Stretch only after the golden path works
 
-1. Upload evidence.
-2. Generate catalogue drafts.
-3. Correct and approve the draft.
-4. Propose and approve publication.
-5. Publish to channel simulators.
-6. Inject one simulated order.
-7. Normalize it and adjust inventory once.
-8. Synchronize remaining quantity to all active listings.
-9. Show the full activity trail.
+- Shopify inventory publication
+- Webhook verification and order ingestion
+- Price-change control exposed in the UI
+- Buyer-question prototype
+- Mock/synthesized secondary channel preview
+- Better voice interaction
 
-## Should have, after the golden path is stable
+Each stretch item requires the core demo to remain stable. Do not trade the Shopify vertical slice for breadth.
 
-- Hindi voice/text input and response
-- Buyer question answer with evidence
-- Price change inside/outside threshold demonstration
-- Connector failure injection and retry UI
-- Inventory uncertainty causing listing pause
-- Basic dashboard impact metrics
+## Not in six-hour scope
 
-## Not in the hackathon MVP
+- Paytm production or physical Soundbox integration
+- ONDC, Amazon, Meesho, or Google production access
+- Real payment, refund, settlement, lending, or delivery flows
+- Production authentication, compliance certification, or multi-tenancy
+- Native mobile
+- General-purpose agents/tools
+- Business-model and pilot metrics in the app
 
-- Live Paytm data or physical Soundbox control
-- Real marketplace certification or production credentials
-- Real payment, settlement, refund, or lending movement
-- Automated legal/KYC submission
-- Production-grade authentication, tenant isolation, or compliance certification
-- Native mobile applications
-- Delivery partner orchestration
-- Broad product-category perfection
-- General-purpose autonomous browsing or arbitrary tool use
+These may be shown as future roadmap only if clearly labelled.
 
-Roadmap items may appear as clearly disabled or “coming next” UI, but must not compete with the golden path.
+## Success criteria
 
-## MVP success criteria
+- Repeatable local boot and reset or a documented fallback setup command.
+- A product image/fixture produces a schema-valid draft.
+- Missing facts do not block publication unless required by Shopify.
+- A first publication cannot bypass recorded merchant approval.
+- The approved payload determines exactly what is sent to Shopify.
+- Shopify credentials never enter source control or logs.
+- The demo can succeed with model/speech disabled by using deterministic catalogue fixtures.
+- Shopify failure is shown honestly with retry/manual correction where feasible.
 
-- The seeded demo can be reset and completed three consecutive times.
-- A first batch cannot publish without recorded approval.
-- A duplicate channel order cannot decrement stock twice.
-- Remaining stock reaches all active simulated channels.
-- A connector failure is visible, retryable when transient, and audited.
-- Missing catalogue facts are requested rather than fabricated.
-- A return/refund request is escalated instead of auto-executed.
-- No live Paytm or marketplace behavior is implied.
+## Assumptions
 
-## Open scope inputs
+- A Shopify development store and app credentials are available locally.
+- The team can install and access a Shopify Admin API app.
+- Network access to Goedel Machines, Sarvam, and Shopify is available at demo time.
+- Local-only deployment is acceptable.
+- No live Paytm data will be used.
 
-The deadline, team role assignment, model/speech providers, deployment target, mobile requirement, price threshold, business-model numbers, and pilot targets remain unresolved. See `docs/plans/open-decisions-and-risks.md`.
+## Scope guardrails
+
+If time or API access fails, cut in this order:
+
+1. Live speech; keep text input and canned demo command.
+2. Live LLM; keep deterministic draft fixture.
+3. Live Shopify product publication only after approval; keep the real connector stub visible but unexecutable.
+4. Orders/inventory sync; retain audit and catalogue publication as the proof point.
+
+Never silently replace a live success claim with a fake result in the UI.

@@ -6,7 +6,7 @@ Target an 8–10 minute demonstration. Keep one minute of buffer and avoid typin
 
 - Deploy/launch the known commit and run migrations.
 - Reset to the deterministic Meena's Sarees seed.
-- Verify API, worker, database, simulator, model/fallback, and web health.
+- Verify API, optional worker, SQLite, model or fallback, Sarvam/text fallback, and Shopify development-store health.
 - Confirm every connector is marked `SIMULATED`.
 - Preload approved synthetic images/bill fixtures.
 - Keep the backup recording and screenshots available.
@@ -27,18 +27,18 @@ Introduce Meena: 400 sarees, one phone, regular customers moving online, and sep
 
 Message: AI accelerates routine work without inventing facts or taking control away.
 
-### 3. One approval, many channels — 2 minutes
+### 3. One approval, Shopify publication — 2 minutes
 
-- Select ONDC, Amazon, Meesho, and Google Business simulators.
+- Show the Shopify draft-product payload.
 - Show channel-specific transformed previews and one validation difference.
-- Approve the first batch.
-- Show independent job states becoming live.
+- Approve the publication action.
+- Show Shopify returning an external product ID and URL/status.
 
 Message: one canonical catalogue is translated into each marketplace format.
 
 ### 4. One order, synchronized stock — 2 minutes
 
-- Inject a simulated order from one channel.
+- If implemented, show a Shopify order in the unified inbox; otherwise clearly show orders/inventory as the roadmap after publication.
 - Show it in the unified inbox.
 - Show one inventory ledger movement.
 - Show updated availability reach every channel.
@@ -64,7 +64,7 @@ Reinforce why SabBazaar belongs with Paytm: merchant relationship, counter prese
 |---|---|
 | Live model unavailable | Switch to deterministic cached model fixture |
 | Speech unavailable/noisy venue | Use the prepared text command |
-| Connector job delayed | Use local simulator and show queued/retry state |
+| Shopify job delayed/failed | Show the persisted failure, Retry where safe, and use the disclosed recorded proof only as fallback |
 | Deployment unavailable | Run the local packaged topology |
 | Upload/vision failure | Open a pre-seeded draft and explain preserved evidence |
 

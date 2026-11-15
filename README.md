@@ -4,7 +4,7 @@
 
 SabBazaar is Team Big Ben's prototype for the Paytm Build for India AI Hackathon, Track 3: Autonomous AI Teammates. It helps a small shop create a catalogue from product photos or bills, publish channel-specific listings, manage orders, and keep inventory synchronized from one merchant experience.
 
-> This repository is currently at the architecture and project-scaffolding stage. Marketplace and Paytm integrations in the hackathon prototype are simulated; no Paytm production data is used.
+> This repository is currently at the architecture and project-scaffolding stage. The first real external integration is Shopify through the team's development account. Paytm and other marketplaces are deferred or explicitly labelled simulations; no Paytm production data is used.
 
 ## MVP demonstration
 
@@ -13,8 +13,8 @@ The first complete vertical slice will show:
 1. A merchant uploads product photos or a bill.
 2. The Catalogue Builder creates structured product drafts.
 3. The merchant reviews and approves the catalogue.
-4. SabBazaar publishes through ONDC, Amazon, Meesho, and Google Business simulators.
-5. A simulated channel order enters the unified inbox.
+4. SabBazaar publishes to Shopify through the real development-store connector.
+5. A Shopify order enters the unified inbox when the configured app and webhook flow are available.
 6. The inventory ledger changes exactly once and stock is synchronized to every channel.
 7. Proposed actions, approvals, connector attempts, and results appear in an audit timeline.
 
@@ -25,9 +25,9 @@ SabBazaar is planned as a **modular monolith plus a background worker**:
 - React and TypeScript merchant application
 - Python FastAPI control plane
 - LangGraph-based bounded agent workflows
-- PostgreSQL canonical catalogue, commerce state, audit log, and transactional outbox
+- SQLite local canonical catalogue, commerce state, audit log, and job state
 - A worker that executes connector jobs
-- A common connector contract with four marketplace simulators
+- A shared connector contract, with Shopify as the first real adapter
 
 Agents never call marketplace adapters directly. They propose structured actions; the policy layer validates and, where required, asks the merchant to approve them before the worker executes a connector command.
 
@@ -62,16 +62,20 @@ Directories contain boundary documents now and will receive implementation code 
 - [Documentation index](docs/README.md)
 - [MVP scope](docs/product/mvp-scope.md)
 - [User flows and acceptance criteria](docs/product/user-flows-and-acceptance.md)
-- [Implementation roadmap](docs/plans/implementation-roadmap.md)
+- [Six-hour implementation plan](docs/plans/implementation-roadmap.md)
 - [Team ownership](docs/plans/team-ownership.md)
 - [Open decisions and risks](docs/plans/open-decisions-and-risks.md)
 - [Agent instructions](AGENTS.md)
 
 ## Team
 
-Team Big Ben: Harsimar, Kedar, and Rythm.
+Team Big Ben: Harsimar, Kedar, and Ridam.
 
-Role assignment is intentionally left open until each member's strengths and availability are confirmed. The three workstreams are AI/agents, merchant experience, and commerce/connectors.
+- Harsimar — AI and agents
+- Kedar — merchant application
+- Ridam — commerce and connectors
+
+Work must integrate continuously because the delivery window is 6 hours.
 
 ## Project status
 
@@ -79,6 +83,5 @@ Role assignment is intentionally left open until each member's strengths and ava
 - [x] Architecture, MVP, delivery, and safety baseline
 - [x] Repository boundaries and contribution instructions
 - [ ] Working development environment
-- [ ] First upload-to-publication vertical slice
-- [ ] Multi-channel order and stock synchronization
+- [ ] Six-hour vertical slice: upload, catalogue draft, approval, Shopify publication, activity trail
 - [ ] Deployed and rehearsed hackathon demo

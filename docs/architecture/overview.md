@@ -1,141 +1,92 @@
 # Architecture overview
 
-## Goal
+## Six-hour architecture
 
-SabBazaar gives an offline merchant one safe control surface for creating a catalogue, publishing it to multiple marketplaces, handling orders, and synchronizing stock. The hackathon prototype must demonstrate this value without pretending that simulated integrations are production connections.
-
-## Architecture style
-
-Use a modular monolith for business and agent logic, with independently run web, API, and worker processes. PostgreSQL stores canonical state, approvals, audit events, and a transactional job outbox.
-
-This gives the team clear module boundaries without the deployment, networking, and consistency cost of microservices.
+SabBazaar is a local-first modular monolith with a responsive React frontend. It proves one real external integration—Shopify—while keeping Paytm and other marketplaces out of the critical path.
 
 ```mermaid
 flowchart LR
-    Owner[Shop owner]
-
-    subgraph Channels
-        Web[React dashboard]
-        Voice[Voice / Soundbox simulator]
-        WhatsApp[WhatsApp simulator]
-    end
-
-    subgraph Backend[FastAPI modular monolith]
-        API[API / control plane]
-        Catalog[Catalogue service]
-        Agent[LangGraph workflows]
-        Policy[Policy and approvals]
-        Commerce[Orders and inventory]
-        Publication[Publication service]
-    end
-
-    subgraph State
-        DB[(PostgreSQL)]
-        Files[(Product images)]
-        Outbox[(Transactional outbox)]
-    end
-
-    Worker[Background worker]
-
-    subgraph Adapters[Simulated connector adapters]
-        ONDC[ONDC]
-        Amazon[Amazon]
-        Meesho[Meesho]
-        Google[Google Business]
-    end
-
-    Owner --> Web
-    Owner --> Voice
-    Owner --> WhatsApp
-    Web --> API
+    Owner[Shop owner] --> Web[React responsive dashboard]
+    Web --> API[FastAPI local API]
+    API --> Agent[Catalogue Builder workflow]
+    API --> Commerce[Catalogue / actions / audit]
+    API --> Shopify[Shopify development-store connector]
+    API --> DB[(SQLite)]
+    Agent --> Model[Goedel OpenAI-compatible API]
+    Owner --> Voice[Sarvam speech or text/recorded fallback]
     Voice --> API
-    WhatsApp --> API
-    API --> Catalog
-    API --> Agent
-    API --> Commerce
-    Agent --> Policy
-    Policy --> Publication
-    Catalog --> DB
-    Commerce --> DB
-    Policy --> DB
-    Publication --> Outbox
-    Catalog --> Files
-    Outbox --> Worker
-    Worker --> ONDC
-    Worker --> Amazon
-    Worker --> Meesho
-    Worker --> Google
-    ONDC --> Commerce
-    Amazon --> Commerce
-    Meesho --> Commerce
-    Google --> Commerce
 ```
+
+A separate worker is preferred eventually. If Python/FastAPI process setup and SQLite lifecycle cooperate in the six-hour window, move job execution to the worker. If not, an in-process job runner is acceptable only when publication is still:
+
+- initiated by recorded merchant approval,
+- protected by server-side policy,
+- idempotent,
+- persisted and visible in the activity endpoint.
 
 ## Runtime boundaries
 
-### Merchant application
+### Web
 
-- Store onboarding and channel status
-- Image/bill upload and voice/text requests
-- Catalogue review and correction
-- Publication and price approvals
-- Unified order inbox
-- Agent activity and audit timeline
+- Product/image upload and seeded fixture selection
+- Draft editor and warnings
+- Approve/reject publication
+- Shopify result link/status
+- Adjustable price threshold UI
+- Activity timeline
 
-### API/control plane
+### API/application services
 
-- Validates requests and establishes merchant context
-- Composes domain and agent application services
-- Exposes approval and job state
-- Does not contain marketplace-specific mapping rules
+- Local merchant/store context
+- Product and action persistence
+- Calls agent package for draft generation
+- Calls policy/approval service before mutation
+- Calls connector for approved Shopify operation
+- Owns transaction boundaries
 
-### Agent workflows
+### Agent package
 
-- Convert unstructured merchant input into typed drafts or proposed actions
-- Use bounded graphs rather than an unrestricted autonomous loop
-- Attach confidence, evidence, missing fields, and a concise rationale
-- Never execute a connector command directly
+- Provider-neutral client configured with `MODEL_BASE_URL=https://api.goedelmachines.com/v1`
+- Strict Pydantic structured output
+- Evidence/confidence/missing fields
+- No connector mutation
 
-### Commerce core
+### Commerce package
 
-- Owns the canonical catalogue, listings, orders, inventory ledger, policies, and action lifecycle
-- Treats connector data as incoming observations to normalize and validate
-- Emits durable jobs and domain events in the same transaction as state changes
+- Canonical product draft/current product
+- Merchant approval
+- Audit events
+- Price threshold policy input
+- Publication request guard
 
-### Worker/connectors
+### Connector package
 
-- Claims queued work safely
-- Executes idempotent channel operations
-- Normalizes results and inbound events
-- Retries transient failures and exposes terminal failures for merchant resolution
+- Connector protocol retained for future channels
+- Shopify adapter is the only live MVP integration
+- Missing access means blocked status, not a fake live result
 
-## Core command flow
+### Persistence
+
+SQLite is deliberate for a local event demo. Do not introduce PostgreSQL/Redis unless there is time remaining after a stable release candidate and an ADR explains the operational cost.
+
+## Critical sequence
 
 ```text
-Merchant request or domain event
-  -> agent/domain service creates ProposedAction
-  -> policy evaluates risk and missing data
-  -> automatic approval OR merchant approval task
-  -> approved command enters transactional outbox
-  -> worker calls channel adapter with idempotency key
-  -> adapter result updates Listing/Order state
-  -> AuditEvent records each transition
+fixture/image + optional voice/text
+  -> LLM structured draft (or deterministic fallback)
+  -> merchant edits missing fields
+  -> approval action recorded
+  -> server validates action/policy
+  -> Shopify connector creates draft product
+  -> audit event records outcome
+  -> UI shows product URL/error
 ```
 
-## Architectural principles
+## Non-negotiable constraints
 
-1. One canonical product can have many channel listings.
-2. Inventory is a ledger, not an editable number copied independently to each platform.
-3. External operations are at-least-once, so consumers and connectors must be idempotent.
-4. AI output is untrusted input until schema and policy validation pass.
-5. Human approval is a first-class state, not a UI-only confirmation dialog.
-6. Every demo dependency has a deterministic local fallback.
-7. Marketplace simulation is visible in the UI and documentation.
-
-## Deferred production concerns
-
-- Marketplace certification and production credentials
-- Paytm production data and physical Soundbox integration
-- Enterprise authentication, tenant isolation, and regional data controls
-- High-volume event streaming and independent service scaling
-- Real settlement movement, lending, refunds, and delivery orchestration
+1. No secret in source or logs.
+2. No external call in default automated tests.
+3. No Shopify mutation before explicit approval action.
+4. No fake “live” success if Shopify is unavailable.
+5. Model output missing required facts stays missing until merchant supplies it.
+6. Six-hour critical path beats feature breadth and abstraction elegance.

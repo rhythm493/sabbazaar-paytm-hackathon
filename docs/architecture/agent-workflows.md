@@ -2,7 +2,7 @@
 
 ## Design approach
 
-SabBazaar uses specialist, bounded workflows coordinated by a small supervisor. LangGraph provides explicit states, transitions, retries, and human-interrupt points. The model is not allowed to run an open-ended loop or invoke a marketplace adapter.
+SabBazaar uses specialist, bounded workflows coordinated by a small supervisor. The implementation may use LangGraph if setup is quick; otherwise a small explicit state machine is preferable. It provides explicit states, transitions, retries, and human-interrupt points. The model is not allowed to run an open-ended loop or invoke a marketplace adapter.
 
 All workflow outputs are validated structured objects. Invalid output is retried within a small limit and then escalated visibly.
 
@@ -39,14 +39,14 @@ Do not persist or display raw chain-of-thought.
 
 ## Listing Specialist
 
-**Input:** approved canonical product/variant and selected channels.
+**Input:** approved canonical Shopify destination product/variant.
 
 **Steps:**
 
-1. Load channel capability/field requirements through read-only connector metadata.
+1. Validate a minimal Shopify draft-product payload.
 2. Transform canonical fields to each channel's listing draft.
 3. Report unsupported or missing attributes.
-4. Propose one publication action per channel.
+4. Propose one publication action for Shopify.
 5. Route first-batch publication through merchant approval.
 
 The policy and publication services—not the agent—enqueue connector jobs.

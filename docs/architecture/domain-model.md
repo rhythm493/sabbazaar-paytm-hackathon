@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The canonical model separates what the merchant sells from how each marketplace represents it. Marketplace payloads must be mapped at the connector boundary and must not leak into core product or inventory entities.
+The canonical model separates what the merchant sells from how each marketplace represents it. Marketplace/Shopify payloads must be mapped at the connector boundary and must not leak into core product or inventory entities.
 
 ## Primary entities
 
@@ -10,7 +10,7 @@ The canonical model separates what the merchant sells from how each marketplace 
 |---|---|
 | `Merchant` | Account and owner identity for the prototype |
 | `Store` | Shop profile, location, language, and operating settings |
-| `ChannelAccount` | Connection/simulator state for one marketplace |
+| `ChannelAccount` | Shopify or explicitly labelled development-channel connection state |
 | `Product` | Merchant-owned product identity and shared description |
 | `Variant` | Sellable SKU with attributes such as colour, size, and unit |
 | `MediaAsset` | Uploaded or generated image and provenance |

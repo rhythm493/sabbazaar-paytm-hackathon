@@ -1,67 +1,64 @@
-# Deployment and observability
+# Local deployment and observability
 
-## Prototype topology
+## Runtime
 
-The intended deployment consists of:
+The event demo is local-only:
 
-1. Static/Node-served React web application
-2. FastAPI API process
-3. Python worker process built from the same backend codebase
-4. PostgreSQL database
-5. Object storage or a documented local-volume fallback for uploaded demo assets
+- Web: React development server
+- API: FastAPI process
+- Optional worker: Python process, or in-process job runner for the six-hour sprint
+- Database: SQLite file, preferably outside committed source or ignored by Git
+- External: Goedel Machines, Sarvam, and Shopify development store
 
-No message broker is required initially. The API writes business state and an outbox job in one PostgreSQL transaction. Workers claim jobs with row locking (for example, `FOR UPDATE SKIP LOCKED`), use bounded retries, and persist results.
+No production deployment, object store, queue, or Kubernetes manifest is part of the MVP.
 
-The final hosting target is open. Deployment-specific files should be added only after the available platform/credits are confirmed.
+## Local configuration
 
-## Environments
+Copy `.env.example` locally and populate values through environment tooling. `.env` must remain untracked. Never paste Shopify, model, or Sarvam credentials into tickets, docs, source, screenshots, or chat.
 
-- `test`: deterministic fakes, isolated database, no external calls
-- `development`: local database, connector simulators, model fake by default with opt-in live provider
-- `demo`: seeded merchant and catalogue, simulated connectors, explicit reset command, optional live model with fallback
+Required variables once implementation exists:
 
-Production is outside the hackathon MVP.
+- `APP_ENV`
+- `DATABASE_URL` or `SQLITE_PATH`
+- `MODEL_BASE_URL=https://api.goedelmachines.com/v1`
+- `MODEL_NAME`
+- `MODEL_API_KEY`
+- `SARVAM_API_KEY`
+- `SHOPIFY_SHOP_DOMAIN`
+- `SHOPIFY_ACCESS_TOKEN`
+- `SHOPIFY_API_VERSION`
+- optional feature/demo flags such as `MODEL_ENABLED`, `SPEECH_ENABLED`, `RUN_LIVE_SHOPIFY_SMOKE`
+
+Do not document actual dev-account values in this repository, even if the token is temporary.
 
 ## Health checks
 
-- Liveness: process event loop responds.
-- Readiness: database/migrations are available; worker readiness also checks job acquisition.
-- Connector status: simulator/channel account health is shown separately and must not make the whole API unready.
-- Model/speech provider status: optional dependency status, with fallback availability.
+- API liveness/readiness: process and SQLite database available
+- Shopify: authenticated read-only check, never a write in health
+- Model/speech: reported optional dependencies with fallback status
+- Demo controls: reset and fixture availability
 
-## Structured logs
+Health output can show whether each dependency is configured; it must not reveal values.
 
-Every log entry should include where applicable:
+## Minimal observability
 
-- Service/process name
-- Environment
-- Correlation and causation IDs
-- Merchant/store IDs (non-sensitive identifiers)
-- Agent run/action/job IDs
-- Event type and state transition
-- Duration and normalized outcome/error code
+Write JSON or structured logs with:
 
-Do not log credentials, uploaded document contents, full buyer messages, bank/KYC data, or raw chain-of-thought.
+- `correlation_id`
+- `store_id` / `product_id` / `action_id`
+- `operation`
+- `result`
+- safe failure code
+- duration
 
-## Metrics
+Do not log uploaded image contents, full buyer messages, access tokens, full model prompts, bank/KYC data, or raw chain-of-thought.
 
-Track at minimum:
+For the six-hour demo, an activity endpoint backed by SQLite is enough. Metrics stacks are out of scope.
 
-- HTTP request count/latency/error rate
-- Agent run count, duration, schema failures, escalations, and optional token/cost totals
-- Approval wait time and outcomes
-- Outbox depth and oldest pending age
-- Connector success/retry/terminal failure count by channel and operation
-- Order deduplication count
-- Inventory synchronization latency and failures
+## Failure policy
 
-For the MVP, structured logs and a simple internal status page may provide enough visibility. Do not add a large monitoring stack unless the deployment platform supplies it or a real need appears.
-
-## Reliability and recovery
-
-- Migrations run explicitly before readiness.
-- Jobs use leases/heartbeats or recover safely from abandoned `running` state.
-- Job payloads reference canonical records rather than embedding sensitive full documents.
-- The demo has seed, reset, and health-check commands.
-- A known-good fixture mode and recorded demo are available if network/model services fail.
-- Database backup/restore is not a full production feature, but demo seed data lives in version control as synthetic fixtures.
+- Model unavailable: switch to deterministic catalogue fixture.
+- Speech unavailable/noisy: use prepared text/recorded command.
+- Shopify auth/validation unavailable: show blocked/error result and use disclosed recorded proof; do not claim a new product was published.
+- SQLite lock/error: stop writes, preserve evidence, restart seed/reset.
+- Any failed approval/persistence means no Shopify mutation.

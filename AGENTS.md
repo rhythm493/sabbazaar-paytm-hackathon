@@ -14,7 +14,7 @@ Read, in order:
 
 ## Product objective
 
-Build a reliable hackathon prototype in which a small merchant can create a canonical catalogue, approve publication, list products through simulated marketplace connectors, receive normalized orders, and synchronize inventory safely.
+Build a reliable hackathon prototype in which a small merchant can create a canonical catalogue, approve publication, publish products to Shopify, receive normalized orders when configured, and keep stock changes explicit and audited.
 
 Optimize for a deterministic end-to-end demonstration, not production breadth.
 
@@ -35,7 +35,7 @@ Optimize for a deterministic end-to-end demonstration, not production breadth.
 - `apps/worker`: durable job acquisition, connector execution, retries, and result persistence
 - `packages/agents`: agent graphs, model adapters, prompts, structured output, and evaluation cases
 - `packages/commerce`: domain entities, business policies, catalogue, orders, inventory ledger, approvals, and application services
-- `packages/connectors`: connector protocol, normalized errors/results, simulators, and mapping logic
+- `packages/connectors`: connector protocol, normalized errors/results, Shopify, and explicitly labelled development-channel fixtures
 - `packages/contracts`: API/event schemas that cross boundaries
 - `tests`: cross-module tests and shared fixtures
 
@@ -46,20 +46,20 @@ Business rules belong in domain/application services, not React components, HTTP
 - Python 3.12+
 - FastAPI and Pydantic
 - LangGraph behind a provider-neutral model interface
-- PostgreSQL and migrations
-- React and TypeScript
-- A PostgreSQL transactional outbox consumed by a separate worker process
+- SQLite for local development and the six-hour demo
+- React and TypeScript responsive web
+- SQLite-backed job state; a separate worker is preferred, with an in-process runner allowed for the six-hour prototype if it preserves idempotency and visible status
 
 Do not introduce another datastore, queue, framework, or service without documenting the reason in an ADR.
 
 ## Development workflow
 
 1. Work in the smallest vertical slice that produces observable value.
-2. Update or introduce a contract before implementing both sides of an integration.
+2. In the six-hour sprint, change only contracts required by the critical path and record deferred contracts explicitly; do not design speculative abstractions.
 3. Add tests with the change.
 4. Update affected architecture/product documentation in the same change.
 5. Record consequential architecture choices as ADRs.
-6. Add a concise entry to `SESSION_LOG.md` for substantial agent-assisted work.
+6. Add a concise entry to `SESSION_LOG.md` for substantial changes.
 7. Do not commit or push unless the user explicitly requests it.
 
 Do not delete or overwrite unfamiliar work. Inspect it first and ask when ownership or intent is unclear.
@@ -75,7 +75,7 @@ The eventual project commands will be recorded here as tooling is initialized. U
 - Golden-path changes: end-to-end test or deterministic demo verification
 - Event consumers: duplicate-delivery/idempotency test
 
-Never make external LLM or marketplace calls in the default test suite. Use fixtures/fakes, with opt-in live tests clearly marked.
+Never make external LLM, speech, Shopify, or marketplace calls in the default test suite. Use fixtures/fakes, with opt-in live tests clearly marked. Shopify development-store smoke checks are opt-in and must not modify unrelated store data.
 
 ## Security and data handling
 

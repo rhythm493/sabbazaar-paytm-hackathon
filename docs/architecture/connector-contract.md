@@ -1,92 +1,56 @@
-# Marketplace connector contract
+# Connector contract
 
-## Purpose
+## Six-hour constraint
 
-Connectors isolate channel protocols and payload formats from SabBazaar's canonical commerce model. The prototype implements simulators behind the same contract intended for future real adapters.
+Only Shopify is required to be real. The abstraction should be thin and should not delay integration. Do not spend time generalizing for ONDC, Amazon, Meesho, or Google during the event.
 
-## Initial interface
-
-The exact language-level interface will be finalized during tooling setup, but it should express these operations:
+## Minimal protocol
 
 ```python
-class MarketplaceConnector:
-    async def capabilities(self) -> ChannelCapabilities: ...
-    async def validate_listing(self, draft: ListingDraft) -> ValidationResult: ...
-    async def publish_listing(
-        self, draft: ListingDraft, idempotency_key: str
-    ) -> ConnectorResult: ...
-    async def update_listing(
-        self, listing: ListingUpdate, idempotency_key: str
-    ) -> ConnectorResult: ...
-    async def update_inventory(
-        self, update: InventoryUpdate, idempotency_key: str
-    ) -> ConnectorResult: ...
-    async def update_price(
-        self, update: PriceUpdate, idempotency_key: str
-    ) -> ConnectorResult: ...
-    async def fetch_orders(self, cursor: str | None = None) -> OrderPage: ...
-    async def normalize_webhook(self, payload: bytes, headers: dict) -> list[InboundEvent]: ...
-    async def get_operation(self, external_operation_id: str) -> ConnectorResult: ...
+class ChannelConnector:
+    async def health_check(self) -> ConnectorHealth: ...
+    async def publish_product(
+        self,
+        draft: ApprovedProductDraft,
+        idempotency_key: str
+    ) -> PublishResult: ...
 ```
 
-Agent code may consume read-only capability metadata through an application service. It may not obtain connector instances or execute these methods.
+If inventory/orders remain in scope, extend only with the methods required by the implemented slice. Do not add placeholder methods that are never tested.
 
-## Normalized results
+## Shopify connector behavior
 
-A connector result should contain:
+Configuration comes from local environment variables, never source:
 
-- Internal job and correlation IDs
-- External resource/operation ID when available
-- Status: success, pending, retryable failure, or terminal failure
-- Safe response summary
-- Normalized error code and merchant-facing remediation
-- Retry-after hint where relevant
-- Sanitized raw fixture reference for debugging
+- `SHOPIFY_SHOP_DOMAIN`, for example `your-store.myshopify.com`
+- `SHOPIFY_ACCESS_TOKEN`
+- `SHOPIFY_API_VERSION`
+- optional `SHOPIFY_LOCATION_ID` for inventory
 
-## Error categories
+The connector must:
 
-| Category | Behavior |
-|---|---|
-| `AUTHENTICATION` | Terminal until channel account is repaired |
-| `VALIDATION` | Terminal; return field-level issues |
-| `RATE_LIMITED` | Retry after connector-provided/default delay |
-| `TEMPORARY_UNAVAILABLE` | Retry with bounded exponential backoff |
-| `CONFLICT` | Re-read/reconcile before retrying |
-| `NOT_FOUND` | Terminal or reconcile depending on operation |
-| `UNKNOWN` | Limited retries, then merchant-visible failure |
+1. Validate configuration and report a readable blocked/error state.
+2. Create a product with the exact approved normalized payload.
+3. Default new products to `status=draft` unless the team explicitly decides otherwise.
+4. Set tags/vendor/product type and description as supported by the selected Admin API version.
+5. Respect an idempotency key or prevent obvious duplicates on retry; at minimum, persist `external_product_id` and do not blindly create on repeated approval.
+6. Return the external product ID and admin/storefront URL when available.
+7. Map authentication, validation, rate-limit, and transient failures to safe codes.
 
-## Idempotency and retries
+## Approval boundary
 
-- The caller supplies a stable idempotency key derived from the approved action and operation target.
-- A simulator must return the original result when the same key is replayed.
-- A worker crash after a remote success must not duplicate a listing or stock update.
-- Retry timing belongs to the worker/job policy, not individual agents.
-- Terminal failures retain enough structured context to fix and resubmit as a new action.
+Connector methods are callable only from the publication application service after a recorded approval. Kedar's UI button requests the action; it does not call Shopify directly.
 
-## Inbound order contract
+## Default tests
 
-Every normalized inbound event includes:
+No default test may call Shopify. Tests use a fake connector. A development-store smoke check may be added as:
 
-- Unique channel source event ID
-- Channel account and external entity ID
-- Event type and source timestamp
-- Received timestamp
-- Schema version
-- Normalized payload
-- Sanitized raw fixture reference
+```text
+RUN_LIVE_SHOPIFY_SMOKE=1 pytest tests/live/test_shopify_smoke.py
+```
 
-Processing inserts the source event key and applies domain changes in one transaction. Duplicate events are acknowledged but do not reapply changes.
+The live check must either create a clearly labelled draft product in the development store or perform a read-only shop query, depending on permissions. It must never delete or overwrite unrelated products on repeat runs.
 
-## Simulator requirements
+## Future channels
 
-Each ONDC, Amazon, Meesho, and Google Business simulator must support:
-
-- Predictable happy-path responses
-- Configurable latency
-- Validation failures
-- Rate limiting and temporary failure injection
-- Stable idempotency behavior
-- Incoming order fixtures where meaningful
-- Clear `SIMULATED` labels in UI and logs
-
-One shared connector contract test suite must run against every adapter.
+The original proposed connectors remain roadmap work. Their presence in the pitch does not authorize six-hour implementation. Add one connector at a time only after Shopify is demonstrably stable.

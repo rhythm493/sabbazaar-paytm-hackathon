@@ -5,7 +5,7 @@
 
 ## Context
 
-ONDC, Amazon, Meesho, and Google Business represent products, listings, orders, and errors differently. Allowing each integration to define internal state would make synchronization and the merchant experience inconsistent.
+Shopify and future channels represent products, listings, orders, and errors differently. Allowing each integration to define internal state would make synchronization and the merchant experience inconsistent.
 
 ## Decision
 

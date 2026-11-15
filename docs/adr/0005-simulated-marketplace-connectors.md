@@ -1,6 +1,6 @@
 # ADR 0005: Use simulated marketplace connectors for the prototype
 
-- Status: Accepted
+- Status: Superseded by ADR 0006
 - Date: 2026-11-15
 
 ## Context

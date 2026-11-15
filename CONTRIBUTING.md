@@ -2,10 +2,10 @@
 
 ## Before starting
 
-1. Read `AGENTS.md` and the relevant architecture documents.
-2. Confirm the issue belongs to the MVP in `docs/product/mvp-scope.md`.
-3. Identify the owning workstream in `docs/plans/team-ownership.md`.
-4. Agree on shared API/event schemas before parallel implementation begins.
+1. Read `AGENTS.md` and the six-hour plan in `docs/plans/implementation-roadmap.md`.
+2. Confirm the issue is on the Shopify vertical-slice critical path.
+3. Identify the DRI: Harsimar (AI), Kedar (app), or Ridam (commerce/connectors).
+4. Agree on the relevant contract before changing both sides; avoid unrelated schema churn.
 
 ## Change guidelines
 

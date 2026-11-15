@@ -18,9 +18,9 @@
 
 ## Plans
 
-- [`plans/implementation-roadmap.md`](plans/implementation-roadmap.md) — phased 10-day baseline
-- [`plans/team-ownership.md`](plans/team-ownership.md) — three-person ownership model
-- [`plans/open-decisions-and-risks.md`](plans/open-decisions-and-risks.md) — unresolved choices and mitigations
+- [`plans/implementation-roadmap.md`](plans/implementation-roadmap.md) — six-hour critical path
+- [`plans/team-ownership.md`](plans/team-ownership.md) — named ownership and integration cadence
+- [`plans/open-decisions-and-risks.md`](plans/open-decisions-and-risks.md) — resolved decisions and delivery risks
 
 ## Decision records
 
@@ -28,7 +28,8 @@
 - [`adr/0002-canonical-commerce-model.md`](adr/0002-canonical-commerce-model.md)
 - [`adr/0003-policy-gate-between-agents-and-connectors.md`](adr/0003-policy-gate-between-agents-and-connectors.md)
 - [`adr/0004-human-approval-for-risky-actions.md`](adr/0004-human-approval-for-risky-actions.md)
-- [`adr/0005-simulated-marketplace-connectors.md`](adr/0005-simulated-marketplace-connectors.md)
+- [`adr/0005-simulated-marketplace-connectors.md`](adr/0005-simulated-marketplace-connectors.md) (superseded)
+- [`adr/0006-six-hour-local-shopify-first.md`](adr/0006-six-hour-local-shopify-first.md)
 
 ## Operations
 
