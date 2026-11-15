@@ -64,16 +64,18 @@ Do not introduce another datastore, queue, framework, or service without documen
 
 Do not delete or overwrite unfamiliar work. Inspect it first and ask when ownership or intent is unclear.
 
-## Commands
-
-```bash
-uv sync                                   # install (Python >= 3.12)
-uv run pytest                             # offline test suite
-uv run ruff check .                       # lint
-uv run uvicorn api.main:app --reload      # API on http://127.0.0.1:8000 (docs at /docs)
-```
-
 ## Test expectations
+
+The Python project uses `uv`; the web project uses npm. Verified commands:
+
+- `uv sync`
+- `uv run --env-file .env alembic upgrade head`
+- `uv run --env-file .env python scripts/seed_demo.py`
+- `uv run pytest`
+- `uv run ruff check .`
+- `uv run --env-file .env uvicorn apps.api.main:app --reload` (API; bill intake under `/v1/ingestions`)
+- `cd apps/web && npm install`
+- `cd apps/web && npm run build`
 
 Required test levels:
 

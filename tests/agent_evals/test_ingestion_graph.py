@@ -6,11 +6,11 @@ import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
-from agents.extraction import ExtractionFailed, FixtureExtractor, LLMExtractor, content_hash
-from agents.ingestion_graph import GraphDeps, build_ingestion_graph
-from commerce.domain import Ingestion
-from contracts.bill import BillExtraction, ExtractedLine
-from contracts.ingestion import IngestionStatus
+from sabbazaar_agents.extraction import ExtractionFailed, FixtureExtractor, LLMExtractor, content_hash
+from sabbazaar_agents.ingestion_graph import GraphDeps, build_ingestion_graph
+from sabbazaar_commerce.domain import Ingestion
+from sabbazaar_contracts.bill import BillExtraction, ExtractedLine
+from sabbazaar_contracts.ingestion import IngestionStatus
 
 BILL = b"\x89PNG fake sample bill bytes"
 

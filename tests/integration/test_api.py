@@ -3,20 +3,21 @@ from __future__ import annotations
 import threading
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from langgraph.checkpoint.memory import InMemorySaver
 
-from agents.extraction import FixtureExtractor, content_hash
-from api.container import build_container
-from api.main import create_app
-from api.settings import Settings
-from commerce.memory import memory_repositories
-from connectors.fake import FakeConnector
-from connectors.registry import ConnectorRegistry
-from connectors.shopify.connector import ShopifyConnector
-from connectors.shopify.credentials import StaticCredentialsProvider
-from contracts.bill import BillExtraction, ExtractedLine
-from contracts.channels import ErrorCode
+from apps.api.bill_intake.container import build_container
+from apps.api.bill_intake.routes import install
+from apps.api.bill_intake.settings import Settings
+from sabbazaar_agents.extraction import FixtureExtractor, content_hash
+from sabbazaar_commerce.memory import memory_repositories
+from sabbazaar_connectors.fake import FakeConnector
+from sabbazaar_connectors.registry import ConnectorRegistry
+from sabbazaar_connectors.shopify_ops.connector import ShopifyConnector
+from sabbazaar_connectors.shopify_ops.credentials import StaticCredentialsProvider
+from sabbazaar_contracts.bill import BillExtraction, ExtractedLine
+from sabbazaar_contracts.channels import ErrorCode
 
 BILL = b"\x89PNG synthetic sample bill"
 ANSWERS = [
@@ -42,7 +43,9 @@ def make_client(tmp_path, extraction, *, connector=None, seed=True):
         extractor=extractor,
         checkpointer=InMemorySaver(),
     )
-    client = TestClient(create_app(container))
+    app = FastAPI()
+    install(app, container)
+    client = TestClient(app)
     if seed:
         assert client.post("/v1/dev/seed").status_code == 200
     return client, fake, container
@@ -74,7 +77,7 @@ def test_golden_path(ready):
     done = r.json()
     assert done["status"] == "completed"
     assert all(j["status"] == "succeeded" for j in done["jobs"])
-    products = {p["sku"]: p for p in client.get("/v1/products").json()}
+    products = {p["sku"]: p for p in client.get("/v1/books").json()}
     assert products["9781847941831"]["on_hand"] == 20  # 12 + 5 + 3 merged
     assert products["9789390166268"]["selling_price"] == "399.00"
     assert products["9788173711466"]["on_hand"] == 12
@@ -107,9 +110,11 @@ def test_duplicate_upload_returns_same_ingestion(tmp_path, sample_extraction):
     client, *_ = make_client(tmp_path, sample_extraction)
     first = upload(client, key="abc")
     again = upload(client)
-    keyed = upload(client, content=b"\x89PNG other", key="abc")
+    same_key = upload(client, key="abc")
+    reused = upload(client, content=b"\x89PNG other", key="abc")
     assert again.status_code == 200 and again.json()["id"] == first.json()["id"]
-    assert keyed.json()["id"] == first.json()["id"]
+    assert same_key.json()["id"] == first.json()["id"]
+    assert reused.status_code == 422 and reused.json()["error"]["code"] == "idempotency_key_reused"
 
 
 def test_double_confirm_applies_once(ready):

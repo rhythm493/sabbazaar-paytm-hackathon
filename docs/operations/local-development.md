@@ -1,39 +1,58 @@
-# Local development plan
+# Local development
 
-Application tooling has not been initialized yet. This document records the intended topology and the checklist the first implementation change must satisfy; it does not invent commands that do not exist.
+Application tooling is initialized. Verified locally on 2026-11-15:
+
+- Python 3.13, `uv`, and Node/npm are available.
+- Python dependencies install with `uv sync`.
+- Alembic migration applies to local SQLite.
+- Default integration test passes without Shopify network access.
+- Web production build passes with `npm run build`.
 
 ## Intended processes
 
-- `web`: React/TypeScript development server
-- `api`: FastAPI HTTP process
-- `worker`: optional Python process consuming jobs, or an in-process six-hour fallback
-- `db`: SQLite
-- `object storage`: local volume initially or an S3-compatible service if required by deployment
+- `web`: React/TypeScript development server on port 5173
+- `api`: FastAPI HTTP process on port 8000
+- `db`: local SQLite, no database service
+- `worker`: not started for the six-hour Shopify-first build; Shopify jobs run in-process behind persisted job state
 
-## Initialization checklist
+## Setup
 
-- Pin Python and Node versions.
-- Choose and document Python and JavaScript package managers.
-- Add root commands or a task runner for setup, lint, type-check, test, migration, seed, reset, and run.
-- Add database migrations and an isolated test database strategy.
-- Keep model and speech providers optional; deterministic fakes must work without API keys.
-- Add Shopify as the first opt-in external integration and keep all tests offline by default.
-- Add health endpoints and startup dependency checks.
-- Update `AGENTS.md`, `CONTRIBUTING.md`, and this document with verified commands.
+```bash
+cp .env.example .env
+uv sync
+uv run --env-file .env alembic upgrade head
+uv run --env-file .env python scripts/seed_demo.py
+```
+
+Keep `.env` local. For a Dev Dashboard custom app, set `SHOPIFY_SHOP_DOMAIN`, `SHOPIFY_CLIENT_ID`, and `SHOPIFY_CLIENT_SECRET`; the backend uses Shopify's client credentials grant to obtain and cache a short-lived Admin API token. A static `SHOPIFY_ACCESS_TOKEN` may be used instead. Never commit credentials.
+
+## Run
+
+Terminal 1:
+
+```bash
+uv run uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --env-file .env
+```
+
+Terminal 2:
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173`.
+
+## Verify
+
+```bash
+uv run pytest
+cd apps/web && npm run build
+```
+
+The default test suite uses a fake Shopify connector. Live Shopify publication is opt-in through local credentials and is not part of automated tests yet.
 
 ## Environment configuration
 
-Copy `.env.example` to `.env` and populate local development values only. Never commit `.env`, Shopify tokens, model keys, or Sarvam keys. Production-like secrets must be supplied by the deployment platform, not image layers or source files.
-
-## Expected one-command developer outcome
-
-Once initialized, a new contributor should be able to:
-
-1. Install pinned dependencies.
-2. Start the API and web app; SQLite requires no database service.
-3. Apply migrations.
-4. Seed the synthetic Meena's Sarees scenario.
-5. Start web, API, and worker.
-6. Run all offline/default tests.
-
-Exact commands must be tested on a clean checkout before being documented as working.
+See `.env.example`. `SHOPIFY_CONNECTOR=shopify` calls Shopify; `SHOPIFY_CONNECTOR=fake` is for deterministic local demos. `DATABASE_URL` defaults to `sqlite:///./sabbazaar.db`.

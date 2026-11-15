@@ -1,0 +1,19 @@
+[project]
+name = "sabbazaar-commerce"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7,<3",
+    "sqlalchemy>=2.0,<3",
+    "sabbazaar-contracts",
+]
+
+[tool.uv.sources]
+sabbazaar-contracts = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sabbazaar_commerce"]

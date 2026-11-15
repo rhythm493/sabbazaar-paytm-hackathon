@@ -82,6 +82,26 @@ Work must integrate continuously because the delivery window is 6 hours.
 - [x] Pitch deck and Markdown source
 - [x] Architecture, MVP, delivery, and safety baseline
 - [x] Repository boundaries and contribution instructions
-- [ ] Working development environment
+- [x] Working local API/web environment
 - [ ] Six-hour vertical slice: upload, catalogue draft, approval, Shopify publication, activity trail
 - [ ] Deployed and rehearsed hackathon demo
+
+## Local quickstart
+
+```bash
+cp .env.example .env
+uv sync
+uv run --env-file .env alembic upgrade head
+uv run --env-file .env python scripts/seed_demo.py
+uv run uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --env-file .env
+```
+
+In another terminal:
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173`. For a Dev Dashboard custom app, leave `SHOPIFY_ACCESS_TOKEN` blank and set `SHOPIFY_CLIENT_ID`/`SHOPIFY_CLIENT_SECRET`; the API exchanges them for a short-lived Admin API token automatically. See [Local development](docs/operations/local-development.md) for verification commands.

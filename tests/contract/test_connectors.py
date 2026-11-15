@@ -8,10 +8,10 @@ from decimal import Decimal
 import httpx
 import pytest
 
-from connectors.fake import FakeConnector
-from connectors.shopify.connector import ShopifyConnector
-from connectors.shopify.credentials import ShopifyCredentials, StaticCredentialsProvider
-from contracts.channels import ErrorCode, ExternalRef, ListingPayload
+from sabbazaar_connectors.fake import FakeConnector
+from sabbazaar_connectors.shopify_ops.connector import ShopifyConnector
+from sabbazaar_connectors.shopify_ops.credentials import ShopifyCredentials, StaticCredentialsProvider
+from sabbazaar_contracts.channels import ErrorCode, ExternalRef, ListingPayload
 
 PAYLOAD = ListingPayload(
     sku="9781786330895",

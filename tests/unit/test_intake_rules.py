@@ -4,15 +4,15 @@ from decimal import Decimal
 
 import pytest
 
-from commerce.domain import Listing
-from commerce.intake.matching import classify
-from commerce.intake.normalize import normalize_extraction
-from commerce.intake.preview import build_preview
-from commerce.intake.questions import AnswerError, apply_answers, open_questions
-from commerce.isbn import normalize_isbn
-from contracts.bill import BillExtraction, ExtractedLine
-from contracts.channels import ExternalRef
-from contracts.ingestion import Answer, LineKind
+from sabbazaar_commerce.domain import Listing
+from sabbazaar_commerce.intake.matching import classify
+from sabbazaar_commerce.intake.normalize import normalize_extraction
+from sabbazaar_commerce.intake.preview import build_preview
+from sabbazaar_commerce.intake.questions import AnswerError, apply_answers, open_questions
+from sabbazaar_commerce.isbn import normalize_isbn
+from sabbazaar_contracts.bill import BillExtraction, ExtractedLine
+from sabbazaar_contracts.channels import ExternalRef
+from sabbazaar_contracts.ingestion import Answer, LineKind
 
 CHANNELS = ["shopify"]
 
@@ -62,7 +62,7 @@ def test_classification(sample_extraction, repos):
 
 def test_unreadable_line():
     ext = BillExtraction(lines=[ExtractedLine(line_no=1, title=None, quantity=2)])
-    from commerce.memory import memory_repositories
+    from sabbazaar_commerce.memory import memory_repositories
 
     r = memory_repositories()
     lines = classify(normalize_extraction(ext), r.catalogue)
