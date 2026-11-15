@@ -12,6 +12,9 @@ import type {
   InventoryEntry,
   PaginatedResponse,
   ApiError,
+  VoiceCommandResponse,
+  BillIngestionView,
+  BillAnswer,
 } from '../types/contracts'
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
@@ -113,6 +116,91 @@ export async function approveProduct(id: string): Promise<Product> {
 
 export async function createProductManual(draft: Omit<Product, 'id' | 'store_id' | 'version' | 'created_at' | 'updated_at' | 'ingestion_id' | 'status'>): Promise<Product> {
   const { data } = await api.post<Product>('/products', draft)
+  return data
+}
+
+// ─── Bill ingestions (src/api/bill_intake routes) ───────────────────────────
+
+function idempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `upload-${crypto.randomUUID()}`
+  }
+  return `upload-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+// Uploads a bill image/PDF. The backend sniffs the real media type.
+export async function uploadBill(file: File): Promise<BillIngestionView> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post<BillIngestionView>('/ingestions', form, {
+    headers: { 'Content-Type': 'multipart/form-data', 'Idempotency-Key': idempotencyKey() },
+    timeout: 300_000, // extraction is a background task; the upload itself is fast
+  })
+  return data
+}
+
+export async function getBillIngestion(id: string): Promise<BillIngestionView> {
+  const { data } = await api.get<BillIngestionView>(`/ingestions/${id}`)
+  return data
+}
+
+export async function answerBillQuestions(
+  id: string,
+  answers: BillAnswer[],
+): Promise<BillIngestionView> {
+  const { data } = await api.post<BillIngestionView>(`/ingestions/${id}/answers`, { answers })
+  return data
+}
+
+// Edits one line of the preview. Creates a NEW preview version+hash on the
+// backend — the returned view is the one to confirm.
+export async function editBillPreview(
+  id: string,
+  lineId: string,
+  fields: Record<string, string>,
+  drop = false,
+): Promise<BillIngestionView> {
+  const { data } = await api.post<BillIngestionView>(`/ingestions/${id}/preview/edit`, {
+    line_id: lineId,
+    fields,
+    drop,
+  })
+  return data
+}
+
+export async function confirmBillPreview(
+  id: string,
+  previewVersion: number,
+): Promise<BillIngestionView> {
+  const { data } = await api.post<BillIngestionView>(`/ingestions/${id}/confirm`, {
+    preview_version: previewVersion,
+  })
+  return data
+}
+
+export async function retryBillIngestion(id: string): Promise<BillIngestionView> {
+  const { data } = await api.post<BillIngestionView>(`/ingestions/${id}/retry`)
+  return data
+}
+
+export async function rejectBillIngestion(id: string): Promise<BillIngestionView> {
+  const { data } = await api.post<BillIngestionView>(`/ingestions/${id}/reject`)
+  return data
+}
+
+// ─── Voice commands ─────────────────────────────────────────────────────────
+
+export async function sendVoiceCommand(file?: Blob, text?: string): Promise<VoiceCommandResponse> {
+  const form = new FormData()
+  if (file) {
+    form.append('file', file, 'command.webm')
+  } else if (text !== undefined) {
+    form.append('text', text)
+  }
+  const { data } = await api.post<VoiceCommandResponse>('/commands', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000, // STT + parse can take longer than the default
+  })
   return data
 }
 

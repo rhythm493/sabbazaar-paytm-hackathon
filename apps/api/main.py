@@ -9,6 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from apps.api.bill_intake.routes import install as install_bill_intake
+from apps.api.voice import install as install_voice
 from sabbazaar_commerce import (
     AuditEvent,
     ConnectorJob,
@@ -43,6 +44,7 @@ app.add_middleware(
 )
 
 install_bill_intake(app)
+install_voice(app)
 
 
 def get_db():
@@ -89,7 +91,7 @@ def int_id(value: str | int, field: str = "id") -> int:
     try:
         parsed = int(value)
     except (TypeError, ValueError):
-        raise HTTPException(422, f"Invalid {field}: expected an integer ID")
+        raise HTTPException(422, f"Invalid {field}: expected an integer ID") from None
     if parsed < 1:
         raise HTTPException(422, f"Invalid {field}: expected a positive integer ID")
     return parsed

@@ -23,6 +23,13 @@ All endpoints are versioned under `/v1` and scoped to the authenticated/seeded m
 - `PATCH /v1/products/{id}` — merchant correction with version check
 - `POST /v1/products/{id}/approve`
 
+### Voice commands
+
+- `POST /v1/commands` — multipart `file` (audio) or form `text`; exactly one required. Audio path requires `SPEECH_ENABLED=true` and a configured `SARVAM_API_KEY`; audio is capped at 10 MB. Transcribes (Sarvam, `translate` mode by default), parses into typed inventory commands (set_price / set_stock / adjust_stock) and deterministically resolves products (exact SKU, else title/handle ILIKE). Creates `ProposedAction` rows with status `awaiting_approval` — nothing touches a channel until merchant approval.
+- `GET /v1/actions?status=awaiting_approval` — list proposal/job-facing actions (joined to store).
+- `POST /v1/actions/{id}/approve` — approves, then runs the connector job (fake or Shopify via `SHOPIFY_CONNECTOR`); idempotent re-approve if the latest job already succeeded; failures leave the action `approved` with the error on the job.
+- `POST /v1/actions/{id}/reject` — rejects from `proposed`/`awaiting_approval`.
+
 ### Agent runs and actions
 
 - `POST /v1/agent-runs` — start a known workflow

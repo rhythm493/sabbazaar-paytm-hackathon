@@ -103,6 +103,16 @@ export interface Action {
   resolved_at: string | null
 }
 
+// ─── Voice commands ─────────────────────────────────────────────────────────
+
+export interface VoiceCommandResponse {
+  transcript: string
+  language_code?: string | null
+  actions: Action[]
+  unparsed: string[]
+  message: string
+}
+
 // ─── Listings / Publications ─────────────────────────────────────────────────
 
 export interface Listing {
@@ -205,4 +215,128 @@ export interface PaginatedResponse<T> {
   total: number
   offset: number
   limit: number
+}
+
+// ─── Bill intake ─────────────────────────────────────────────────────────────
+// Mirrors packages/contracts/src/sabbazaar_contracts/ingestion.py
+// (IngestionView). Money and quantity fields serialize as strings/numbers.
+
+export type BillIngestionStatus =
+  | 'received'
+  | 'extracting'
+  | 'needs_input'
+  | 'checking'
+  | 'awaiting_confirmation'
+  | 'applying'
+  | 'completed'
+  | 'partially_failed'
+  | 'failed'
+  | 'rejected'
+
+export type BillLineKind = 'restock' | 'new' | 'uncertain_match' | 'unreadable'
+
+export interface BillFieldValue {
+  value: string | number | null
+  source: 'bill' | 'owner' | 'catalogue' | 'config'
+  confidence?: number | null
+}
+
+export interface BillWorkingLine {
+  id: string
+  line_nos: number[]
+  kind: BillLineKind | null
+  matched_book_id: string | null
+  candidate_book_id: string | null
+  fields: Record<string, BillFieldValue>
+  notes: string[]
+  dropped: boolean
+}
+
+export type BillQuestionKind = 'missing_field' | 'price' | 'confirm_match'
+
+export interface BillQuestion {
+  id: string
+  line_id: string
+  kind: BillQuestionKind
+  field: string | null
+  prompt: string
+  suggestion: string | null
+  blocking: boolean
+  allow_drop: boolean
+}
+
+export interface BillAnswer {
+  question_id: string
+  value: string | null
+  drop_line?: boolean
+}
+
+export interface BillChannelChange {
+  channel: string
+  operation: 'publish_product' | 'update_product' | 'set_inventory'
+  summary: string
+  price: string | null
+  quantity: number | null
+  expected_current: number | null
+  payload: Record<string, unknown> | null
+}
+
+export interface BillPreviewLine {
+  line_id: string
+  kind: BillLineKind
+  book_id: string | null
+  sku: string
+  title: string
+  stock_before: number
+  stock_after: number
+  quantity_added: number
+  price_before: string | null
+  price_after: string
+  price_change_pct: number | null
+  mrp: string | null
+  unit_cost: string | null
+  author: string | null
+  isbn: string | null
+  publisher: string | null
+  warnings: string[]
+  notes: string[]
+  channel_changes: BillChannelChange[]
+}
+
+export interface BillPreview {
+  version: number
+  hash: string
+  lines: BillPreviewLine[]
+}
+
+export type BillJobStatus =
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'retryable_failure'
+  | 'terminal_failure'
+
+export interface BillJob {
+  id: string
+  line_id: string
+  channel: string
+  operation: string
+  status: BillJobStatus
+  attempts: number
+  error_code: string | null
+  message: string | null
+  admin_url: string | null
+}
+
+export interface BillIngestionView {
+  id: string
+  status: BillIngestionStatus
+  filename: string
+  fallback_used: boolean
+  simulated_channels: string[]
+  lines: BillWorkingLine[]
+  questions: BillQuestion[]
+  preview: BillPreview | null
+  jobs: BillJob[]
+  error: string | null
 }

@@ -7,6 +7,7 @@ dependencies = [
     "langgraph>=1.0,<2",
     "langchain>=1.0,<2",
     "langchain-google-genai>=4.0,<5",
+    "langchain-openai>=1.0,<2",
     "sabbazaar-contracts",
     "sabbazaar-commerce",
 ]

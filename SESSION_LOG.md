@@ -216,3 +216,127 @@ Preserve the SabBazaar presentation as project source material.
 
 - Converted the 10-page PDF text to `SabBazaar.md`.
 - Created the public GitHub repository under `rhythm493`.
+
+## 2026-11-15 — DeepSeek V4.1 Flash model configuration (.env only, not committed)
+
+### Goal
+
+Point the provider-neutral model layer (ADR 0007) at Gödel Machines' DeepSeek V4.1 Flash
+(`deepseek/deepseek-v4.1-flash`, OpenAI-compatible, `https://api.goedelmachines.com/v1`).
+
+### Result
+
+- `.env` (gitignored): `MODEL_PROVIDER=openai`, `MODEL_NAME=deepseek/deepseek-v4.1-flash`,
+  `MODEL_BASE_URL=https://api.goedelmachines.com/v1`, `MODEL_API_KEY` left blank for the operator to fill.
+- `.env.example`: documented this option and its text-only modality caveat.
+- `packages/agents/pyproject.toml`: added `langchain-openai>=1.0,<2` (required for `model_provider="openai"`);
+  `uv.lock` needs regenerating (`uv lock`) before the app can import it.
+
+### Open issue
+
+The bill extractor sends the uploaded bill as an image/PDF content block, but this model is
+text-only (per the provider's `/v1/models` listing). Live extraction will fail until a
+vision-capable model is configured or an OCR/text pre-step is added to the pipeline.
+
+## 2026-11-15 — Switch bill-intake vision model to Gemini (.env only, not committed)
+
+DeepSeek V4.1 Flash on Gödel Machines proved text-only (it returned 200 with a fabricated
+description for a 1×1 black PNG instead of refusing). `.env` now uses `MODEL_PROVIDER=google_genai`,
+`MODEL_NAME=gemini-2.5-flash`, `MODEL_BASE_URL` cleared, `MODEL_API_KEY` copied from the pocket-assistant
+project's `GEMINI_API_KEY` (key not committed). `langchain-google-genai` 4.5.0 was already
+installed and locked, so no new dependencies were needed.
+
+Verified end-to-end against the real code path: `LLMExtractor` on `tests/fixtures/bills/sample_bill.png`
+returned `fallback_used=False` with invoice `PVD/2026/0412` (2026-11-10) and all 6 line items
+(ISBNs, quantities, MRPs) transcribed correctly. The API must be restarted to pick up the change.
+`.env.example` already documents this as the default; DeepSeek/Gödel remains documented as a text-only option.
+
+## 2026-11-15 — Voice → inventory commands → approval pipeline
+
+### Goal
+
+Give the merchant a voice/typed command path (Sarvam STT → structured parse →
+typed proposed inventory-modification actions → merchant approval → connector
+jobs) alongside the existing bill-intake flow, per ADR 0003 (policy gate
+between agents and connectors).
+
+### Result
+
+- `packages/contracts/src/sabbazaar_contracts/commands.py` (new): `CommandOp`
+  (set_price/set_stock/adjust_stock), `InventoryCommand`, `CommandExtraction`,
+  `ActionOut`, `CommandResponse`.
+- `packages/agents/src/sabbazaar_agents/voice.py` (new): `speech_enabled()`
+  (SPEECH_ENABLED gate), `transcribe_audio()` → `POST https://api.sarvam.ai/speech-to-text`
+  (model `saaras:v4`, override `SARVAM_STT_MODEL`; `mode` from `SARVAM_MODE`,
+  default `translate`), and `propose_inventory_commands()` via the
+  provider-neutral chat model with a strict `CommandExtraction` structured output.
+- `apps/api/voice.py` (new, self-contained; mounted from `apps/api/main.py` via
+  `install_voice(app)` after `install_bill_intake(app)`): `POST /v1/commands`
+  (multipart `file` or form `text`; 10 MB audio cap; 10 MB/413, 503 when speech
+  disabled), deterministic product resolution in code (exact SKU, else
+  title/handle ILIKE escaped), `GET /v1/actions?status=`,
+  `POST /v1/actions/{id}/approve|reject`. Approval runs a `ConnectorJob`
+  (fake connector when `SHOPIFY_CONNECTOR=fake`, else `shopify_ops`
+  `ShopifyConnector(EnvCredentialsProvider())`). Jobs are idempotent
+  (`cmd:<sha1[:16]>` keys); channel failures leave the action `approved` with
+  the error on the job; success sets it `executed`. Price threshold
+  (`store.price_change_threshold_percent`) deliberately NOT enforced — the
+  approve endpoint is the gate; noted in a code comment.
+- Web (`apps/web`): `sendVoiceCommand()` client fn, `VoiceCommandResponse` type,
+  mock fixtures, new `Assistant` tab with `VoiceCommandPanel` (mic via
+  getUserMedia/MediaRecorder, typed-text fallback, approve/reject buttons,
+  re-fetches `getActions('awaiting_approval')` after resolution).
+- Env/docs: `.env.example` documents `SARVAM_STT_MODEL`/`SARVAM_MODE` and the
+  `SPEECH_ENABLED` gate; `docs/architecture/api-and-events.md` lists the
+  voice-command endpoint group.
+
+### Verification
+
+- `py_compile` clean on all new/changed Python files; `import apps.api.voice`
+  and `import apps.api.main` succeed in the existing `.venv` (no sync run).
+- `.venv/bin/python -m pytest tests/integration` — 25 passed, including the 6
+  new `test_commands_api.py` cases (LLM parse and STT monkeypatched;
+  `SHOPIFY_CONNECTOR=fake`).
+- Temp-DB smoke of the full app: `GET /v1/actions` → 200; `POST /v1/commands`
+  text with model unconfigured → 503; file upload with SPEECH_ENABLED=false → 503.
+- `cd apps/web && npm run build` — clean.
+
+### Not verified
+
+- No live Sarvam STT or live LLM calls were made; parse is monkeypatched in tests.
+- `uv lock` regeneration was not run (uv usage out of scope for this session).
+  `ruff check` on the new/changed files passes (one pre-existing B904 in
+  `apps/api/main.py` left untouched).
+
+## 2026-11-15 — Bill intake completed end-to-end + web Bill Intake tab
+
+### Changes
+- `.env` (gitignored): `SHOPIFY_LOCATION_ID=94393434261` (numeric; `shopify_ops`
+  credentials auto-wrap to `gid://shopify/Location/94393434261`). Unblocks
+  publish_product/set_inventory `not_configured` failures.
+- Web (`apps/web`): new `BillIntakePanel` component (upload drop-zone, live
+  status polling of bill-intake ingestions, per-question answers form with
+  drop-line support, preview v/hash view with inline price edits,
+  confirm/reject, jobs list with retry, `isMock` full local simulation).
+  New `Bill Intake` tab in `Dashboard`; Catalogue "Add Products" uploader now
+  shown only in demo mode — live mode shows a pointer card to Bill Intake.
+  `client.ts`: `uploadBill()` (multipart + `Idempotency-Key`, 300 s timeout),
+  `getBillIngestion`, `answerBillQuestions`, `editBillPreview`,
+  `confirmBillPreview`, `retryBillIngestion`, `rejectBillIngestion`;
+  `types/contracts.ts`: `BillIngestionView`/`BillWorkingLine`/`BillQuestion`/
+  `BillPreview`/`BillJob` wire types; `mockData.ts`: `MOCK_BILL_*` fixtures.
+
+### Verification
+- Restarted API (venv uvicorn directly — `uv run` avoided per user constraint);
+  `GET /v1/channels` → ok, "Connected to SabBazaar"; `/health/ready` → ok.
+- Live round-trip on `tests/fixtures/bills/sample_bill.png` (Gemini):
+  202 → `needs_input` (5 lines) → answers → preview v1 → confirm → status
+  `completed`; all 5 `publish_product` jobs SUCCEEDED; draft products created
+  in Shopify (e.g. product ids …15531371069589…15531371364501).
+- `cd apps/web && npm run build` — clean (tsc + vite).
+
+### Not done / known gaps
+- Bill intake writes to its in-memory repos only — confirmed books never
+  appear in `/v1/products`/catalogue UI.
+- No live-mode e2e from browser yet (mock mode covers the flow UI).
+- Everything uncommitted — awaiting explicit user approval.

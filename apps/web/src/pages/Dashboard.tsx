@@ -9,13 +9,15 @@ import { Header } from '../components/Header'
 import { ProductUpload } from '../components/ProductUpload'
 import { DraftEditor } from '../components/DraftEditor'
 import { PublishPanel } from '../components/PublishPanel'
+import { VoiceCommandPanel } from '../components/VoiceCommandPanel'
+import { BillIntakePanel } from '../components/BillIntakePanel'
 import { PublicationStatus } from '../components/PublicationStatus'
 import { ActivityTimeline } from '../components/ActivityTimeline'
 import { PriceThresholdControl } from '../components/PriceThresholdControl'
 import { LoadingState } from '../components/Spinner'
 import { EmptyState } from '../components/Alert'
 
-type Section = 'catalogue' | 'publish' | 'activity' | 'settings'
+type Section = 'catalogue' | 'bills' | 'publish' | 'assistant' | 'activity' | 'settings'
 
 export default function Dashboard() {
   const [isMock, setIsMock] = useState(false)
@@ -165,7 +167,9 @@ export default function Dashboard() {
   // ── Render ──────────────────────────────────────────────────────────────────
   const navItems: { id: Section; label: string; count?: number }[] = [
     { id: 'catalogue', label: 'Catalogue', count: products.length },
+    { id: 'bills',     label: 'Bill Intake' },
     { id: 'publish',   label: 'Publish',   count: listings.length },
+    { id: 'assistant', label: 'Assistant' },
     { id: 'activity',  label: 'Activity' },
     { id: 'settings',  label: 'Settings' },
   ]
@@ -221,13 +225,32 @@ export default function Dashboard() {
             {activeSection === 'catalogue' && (
               <div className="space-y-6">
                 {/* Upload section */}
-                <section>
-                  <h2 className="text-base font-semibold text-gray-900 mb-3">Add Products</h2>
-                  <ProductUpload
-                    onIngestionStarted={handleIngestionStarted}
-                    isMock={isMock}
-                  />
-                </section>
+                {isMock && (
+                  <section>
+                    <h2 className="text-base font-semibold text-gray-900 mb-3">Add Products</h2>
+                    <ProductUpload
+                      onIngestionStarted={handleIngestionStarted}
+                      isMock={isMock}
+                    />
+                  </section>
+                )}
+                {!isMock && (
+                  <section>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900">Add products from a supplier bill</p>
+                        <p className="text-xs text-blue-800">Upload the bill in Bill Intake — AI extracts the lines and creates Shopify drafts after your approval.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection('bills')}
+                        className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                      >
+                        Open Bill Intake
+                      </button>
+                    </div>
+                  </section>
+                )}
 
                 {/* Product list */}
                 {products.length > 0 && (
@@ -276,6 +299,11 @@ export default function Dashboard() {
             )}
 
             {/* ── PUBLISH ─────────────────────────────────────────── */}
+            {/* ── BILL INTAKE ───────────────────────────────────── */}
+            {activeSection === 'bills' && (
+              <BillIntakePanel isMock={isMock} />
+            )}
+
             {activeSection === 'publish' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -302,6 +330,13 @@ export default function Dashboard() {
                     />
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ── ASSISTANT ─────────────────────────────────────── */}
+            {activeSection === 'assistant' && (
+              <div className="max-w-2xl">
+                <VoiceCommandPanel isMock={isMock} />
               </div>
             )}
 
