@@ -66,7 +66,16 @@ Do not delete or overwrite unfamiliar work. Inspect it first and ask when owners
 
 ## Test expectations
 
-The eventual project commands will be recorded here as tooling is initialized. Until then, follow these required test levels:
+The Python project uses `uv`; the web project uses npm. Verified commands:
+
+- `uv sync`
+- `uv run --env-file .env alembic upgrade head`
+- `uv run --env-file .env python scripts/seed_demo.py`
+- `uv run pytest`
+- `cd apps/web && npm install`
+- `cd apps/web && npm run build`
+
+Required test levels:
 
 - Domain and policy changes: unit tests
 - Connector changes: shared connector contract suite
