@@ -190,10 +190,31 @@ export async function rejectBillIngestion(id: string): Promise<BillIngestionView
 
 // ─── Voice commands ─────────────────────────────────────────────────────────
 
+// Sarvam requires a plain audio MIME type and a matching file extension.
+function voiceFilename(mimeType: string | undefined): string {
+  const type = (mimeType ?? '').split(';')[0].trim().toLowerCase()
+  switch (type) {
+    case 'audio/webm':
+      return 'command.webm'
+    case 'audio/ogg':
+      return 'command.ogg'
+    case 'audio/mp4':
+      return 'command.m4a'
+    case 'audio/mpeg':
+    case 'audio/mp3':
+      return 'command.mp3'
+    case 'audio/wav':
+    case 'audio/wave':
+      return 'command.wav'
+    default:
+      return 'command.webm'
+  }
+}
+
 export async function sendVoiceCommand(file?: Blob, text?: string): Promise<VoiceCommandResponse> {
   const form = new FormData()
   if (file) {
-    form.append('file', file, 'command.webm')
+    form.append('file', file, voiceFilename(file.type))
   } else if (text !== undefined) {
     form.append('text', text)
   }

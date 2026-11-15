@@ -18,6 +18,38 @@ from sabbazaar_contracts.commands import CommandExtraction
 SARVAM_STT_URL = "https://api.sarvam.ai/speech-to-text"
 SARVAM_MODEL = "saaras:v4"  # default; saaras:v3 accepted by the same endpoint
 
+# Sarvam validates an exact, parameterless MIME type. Browsers hand us e.g.
+# "audio/webm;codecs=opus" — strip the parameters and remap the common
+# "audio/x-*" aliases to their accepted forms.
+_CONTENT_TYPE_REMAP = {
+    "audio/x-webm": "audio/webm",
+    "audio/x-ogg": "audio/ogg",
+    "audio/wave": "audio/wav",
+    "audio/x-wav": "audio/wav",
+}
+
+_EXTENSION_FALLBACK = {
+    ".webm": "audio/webm",
+    ".ogg": "audio/ogg",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".aac": "audio/aac",
+    ".aiff": "audio/aiff",
+    ".aif": "audio/aiff",
+}
+
+
+def normalize_audio_content_type(content_type: str | None, filename: str = "") -> str:
+    """Return the base, Sarvam-accepted MIME type for the uploaded audio."""
+    base = (content_type or "").split(";", 1)[0].strip().lower()
+    base = _CONTENT_TYPE_REMAP.get(base, base)
+    if base and base != "application/octet-stream":
+        return base
+    for ext, mime in _EXTENSION_FALLBACK.items():
+        if filename.lower().endswith(ext):
+            return mime
+    return "application/octet-stream"  # accepted by Sarvam as-is
+
 SYSTEM_PROMPT = """You convert a merchant's spoken inventory instruction (English or Hindi-English mix)
 into structured inventory modification commands for their shop catalogue.
 
@@ -67,11 +99,12 @@ def transcribe_audio(
     key = (api_key if api_key is not None else os.getenv("SARVAM_API_KEY", "")).strip()
     if not key:
         raise SpeechUnavailable("SARVAM_API_KEY is not configured; speech input is disabled")
+    media_type = normalize_audio_content_type(content_type, filename)
     try:
         resp = httpx.post(
             SARVAM_STT_URL,
             headers={"api-subscription-key": key},
-            files={"file": (filename, audio, content_type or "application/octet-stream")},
+            files={"file": (filename, audio, media_type)},
             data={
                 "model": os.getenv("SARVAM_STT_MODEL", SARVAM_MODEL),
                 "mode": mode or os.getenv("SARVAM_MODE", "translate"),

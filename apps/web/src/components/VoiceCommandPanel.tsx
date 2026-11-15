@@ -25,7 +25,8 @@ const INTENT_LABELS: Record<string, string> = {
 
 function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined') return undefined
-  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+  // Prefer bare MIME types (no ;codecs=… params) — the server and Sarvam reject parameterized types.
+  const candidates = ['audio/webm', 'audio/ogg', 'audio/mp4']
   return candidates.find(t => MediaRecorder.isTypeSupported(t))
 }
 

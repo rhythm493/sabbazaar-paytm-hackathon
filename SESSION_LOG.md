@@ -340,3 +340,23 @@ between agents and connectors).
   appear in `/v1/products`/catalogue UI.
 - No live-mode e2e from browser yet (mock mode covers the flow UI).
 - Everything uncommitted — awaiting explicit user approval.
+
+## 2026-11-15 — Voice: Sarvam MIME normalization (400 fix)
+
+- Bug: browser MediaRecorder uploads `file` with `audio/webm;codecs=opus`;
+  Sarvam rejects parameterized MIME with `HTTP 400 Invalid file type`.
+- Fix (packages/agents/src/sabbazaar_agents/voice.py): `normalize_audio_content_type()`
+  strips `;codecs=…` parameters, remaps `audio/x-webm`/`audio/x-ogg`/`audio/wave`/`audio/x-wav`
+  aliases to accepted forms, falls back to the filename extension, else `application/octet-stream`
+  (accepted). Applied inside `transcribe_audio()` — one place, covers every caller.
+- Live-verified against Sarvam: parameterized `audio/webm;codecs=opus` now returns 200
+  (empty transcript on a 1 s sine wave, as expected).
+- Added `tests/unit/test_voice_content_type.py` (5 cases, offline); `ruff check .` clean;
+  `pytest` 71 passed. API restarted via venv uvicorn (no `uv run`), pid changed.
+- Also live-verified Sarvam accepts `audio/mp3`, `audio/mpeg`, bare `audio/ogg` and
+  `audio/mp4` (HTTP 200), and rejects parameterized `audio/ogg;codecs=opus` (same 400
+  class). Web fix: MediaRecorder now requests a bare MIME from
+  `['audio/webm', 'audio/ogg', 'audio/mp4']`, and `sendVoiceCommand` names the upload
+  with the extension matching the actual MIME (`command.webm|ogg|m4a|mp3|wav`) instead
+  of hardcoded `command.webm`. `tsc -b` and `vite build` clean.
+- Uncommitted — awaiting user approval to commit.
