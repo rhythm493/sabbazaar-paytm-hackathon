@@ -9,6 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from apps.api.bill_intake.routes import install as install_bill_intake
+from apps.api.photo import install as install_photo
 from apps.api.voice import install as install_voice
 from sabbazaar_commerce import (
     AuditEvent,
@@ -45,6 +46,7 @@ app.add_middleware(
 
 install_bill_intake(app)
 install_voice(app)
+install_photo(app)
 
 
 def get_db():
@@ -125,6 +127,17 @@ def product_api(product: Product) -> dict:
     if not evidence_summary and evidence not in (None, {}, ""):
         evidence_summary = json.dumps(evidence, ensure_ascii=False)
 
+    variants = [
+        {
+            "id": str(v.id),
+            "sku": v.sku,
+            "title": v.title,
+            "price_inr": float(v.price_inr) if v.price_inr is not None else None,
+            "inventory_item_id": v.inventory_item_id,
+            "stock_on_hand": v.stock_on_hand,
+        }
+        for v in product.variants
+    ]
     return {
         "id": str(product.id),
         "store_id": str(product.store_id),
@@ -144,6 +157,8 @@ def product_api(product: Product) -> dict:
         "ingestion_id": None,
         "external_product_id": product.external_product_id,
         "admin_url": product.admin_url,
+        "variants": variants,
+        "stock_on_hand": sum(v["stock_on_hand"] for v in variants),
     }
 
 

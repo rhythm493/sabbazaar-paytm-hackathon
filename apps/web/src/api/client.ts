@@ -302,3 +302,21 @@ export async function checkHealth(): Promise<{ status: string }> {
   const { data } = await axios.get<{ status: string }>('/health/ready')
   return data
 }
+
+// ─── Photo product draft ──────────────────────────────────────────────────────
+
+export async function createProductFromPhoto(
+  file: File,
+  opts: { priceInr?: number | string; sku?: string; title?: string } = {},
+): Promise<Product> {
+  const form = new FormData()
+  form.append('file', file)
+  if (opts.priceInr !== undefined && opts.priceInr !== '') form.append('price_inr', String(opts.priceInr))
+  if (opts.sku) form.append('sku', opts.sku)
+  if (opts.title) form.append('title', opts.title)
+  const { data } = await api.post<Product>('/products/photo', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000, // vision extraction can be slow
+  })
+  return data
+}

@@ -7,6 +7,7 @@ import { MOCK_PRODUCTS, MOCK_STORE, MOCK_ACTIVITY, MOCK_LISTINGS } from '../api/
 
 import { Header } from '../components/Header'
 import { ProductUpload } from '../components/ProductUpload'
+import { PhotoProductPanel } from '../components/PhotoProductPanel'
 import { DraftEditor } from '../components/DraftEditor'
 import { PublishPanel } from '../components/PublishPanel'
 import { VoiceCommandPanel } from '../components/VoiceCommandPanel'
@@ -102,6 +103,10 @@ export default function Dashboard() {
       }
     }
     setActiveSection('catalogue')
+  }
+
+  function handlePhotoDraftCreated(product: Product) {
+    setProducts(prev => [product, ...prev.filter(p => p.id !== product.id)])
   }
 
   function handleProductUpdated(updated: Product) {
@@ -235,7 +240,8 @@ export default function Dashboard() {
                   </section>
                 )}
                 {!isMock && (
-                  <section>
+                  <section className="grid gap-4 lg:grid-cols-2">
+                    <PhotoProductPanel onCreated={handlePhotoDraftCreated} />
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
                       <div>
                         <p className="text-sm font-semibold text-blue-900">Add products from a supplier bill</p>

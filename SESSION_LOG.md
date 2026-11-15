@@ -360,3 +360,42 @@ between agents and connectors).
   with the extension matching the actual MIME (`command.webm|ogg|m4a|mp3|wav`) instead
   of hardcoded `command.webm`. `tsc -b` and `vite build` clean.
 - Uncommitted — awaiting user approval to commit.
+
+## 2026-11-15 — Bill intake now syncs confirmed changes into the SQLAlchemy ORM (Full ORM mapping + stock ledger)
+
+Confirmed bill-intake lines are written into the canonical catalogue instead of staying memory-only.
+
+- Schema: `product_variants.stock_on_hand` (`INTEGER NOT NULL DEFAULT 0`) + new `inventory_ledger` table (append-only, `source_key` unique per `ingestion:{id}:{line_id}`, FK → `product_variants.id`, `delta`, `reason`). Alembic revision `c3a1d2e9f7b0_add_stock_ledger.py` (down_revision `beed12e124c9`).
+- `ApplyService` (commerce) gains optional keyword callbacks `on_lines_applied` / `on_jobs_run`; `_apply_lines` collects serialized per-line dicts and `run_jobs()` serializes jobs (now including `sku` resolved from the in-memory book). Callback failures are logged + swallowed; the bill flow never depends on the ORM sync.
+- New `apps/api/bill_intake/orm_sync.py` (`build_orm_sync(repos)` → two callbacks):
+  - `on_lines_applied` — per line, in a fresh session: idempotent via `proposed_actions.idempotency_key = orm:bill:{ingestion}:{line_id}`; product upsert by variant SKU (create: draft, vendor=publisher, type=Book, tags `sabbazaar, bill-ingestion`, handle `slugify(title)` w/ random suffix, confidence 1.0, evidence `source: bill-ingestion`; update: price + `version += 1`, `compare_at_price_inr` ← MRP); `inventory_ledger` insert (deduped by source_key) + `stock_on_hand += quantity`; audit `bill.catalogue.synced.v1`.
+  - `on_jobs_run` — publish_product + succeeded only: marker `…:listing`; SKU→variant→product; parse Shopify gid from job `admin_url` (`products/(\d+)`); set `external_product_id`/`admin_url`, `status`→`shopify_draft` if draft-ish; upsert ORM `Listing` (draft); audit `bill.listing.synced.v1`.
+  - Line markers and ledger keys are replay-safe; failures roll back only their unit and write a fresh `bill.orm_sync_failed` audit row.
+- Container wires `build_orm_sync(repos)` by default (overridable via `build_container(on_lines_applied=, on_jobs_run=)`).
+- `/v1/products` (shape used by the web catalogue) now returns `variants: [{id, sku, title, price_inr, inventory_item_id, stock_on_hand}]` and a rolled-up `stock_on_hand`.
+- Web: `ProductVariantWeb` type; `DraftEditor` shows a `Stock: N` badge; variant fields optional so mocks keep working.
+- Verification: ruff clean; `.venv/bin/python -m pytest tests -q` → 71 passed; alembic upgrade applied to `sabbazaar.db`; `tsc -b` clean.
+- Live round trip (sample_bill.png, Gemini): confirm → `completed`, 5 publish_product jobs succeeded; ORM products 6–12 created/updated (e.g. Atomic Habits stock 8→16 across the two ingestions), `inventory_ledger` rows, `shopify_draft` status + gids + `Listing` rows 6,7,8,11,12 (product 9,10 listings repaired manually after the precedence bug `channel == ... or "shopify"` was fixed — see `bill.listing.synced.v1` repair rows).
+- Known gap: ISBN-less bills get ingestion-scoped `SB-{id}-Lx` SKUs, so Wings of Fire / Sapiens duplicate across two confirmations of the same invoice. Reconcile by normalized title if needed.
+- Not committed; no schema change to in-memory bill-intake path.
+
+## 2026-11-15 — Phase B: single-photo product upload
+
+- New `POST /v1/products/photo` (`apps/api/photo.py`, self-contained): multipart `file`
+  (PNG/JPEG/WebP ≤10 MB, magic-byte sniffed) + optional form `price_inr` / `sku` / `title`.
+  Merchant form fields override extracted values; the price is never invented — if neither the
+  form nor the photo shows a price the request fails 422. Model unconfigured and form lacks
+  title+price → 503. Extraction failure → 502. SKU fallback `PHOTO-<8 hex>` (our own identifier,
+  flagged `sku_generated` in evidence).
+- New `sabbazaar_contracts.photo.ProductPhotoExtraction` (title/description/vendor/product_type?
+  /price_inr/sku/confidence/missing_fields/notes) and `sabbazaar_agents.photo_extract`
+  (`extract_product_photo`, ADR-0007 `build_chat_model`, default gemini-2.5-flash). No connectors, no persistence.
+- Drafts are created via `create_product` (status=draft; approval→publish gate unchanged);
+  `catalogue.photo.draft.created.v1` audit event appended. Web catalogue (live mode) now has a
+  "One product, one photo" dropzone (`PhotoProductPanel.tsx`, `capture="environment"`, price hint
+  "AI never invents a price") alongside the Bill Intake pointer card.
+- Verification: `ruff check .` clean; `pytest` 79 passed (8 new offline tests, monkeypatched
+  extraction); `npx tsc -b` + `vite build` clean; live smoke POST /v1/products/photo with a
+  rendered price-tag card image via Gemini → 201 product id 13 "Handloom Cotton Kurti" ₹899,
+  draft, SKU PHOTO-1AE4BC9A, confidence 0.9. (Test draft id 13 remains in sabbazaar.db.)
+- Uncommitted — awaiting explicit user approval.
