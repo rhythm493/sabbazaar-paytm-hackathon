@@ -1,0 +1,33 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# JavaScript / TypeScript
+node_modules/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Runtime data
+uploads/
+data/
+*.db
+*.sqlite*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
