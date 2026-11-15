@@ -6,12 +6,15 @@ export type ProductStatus =
   | 'draft'
   | 'approved'
   | 'publishing'
+  | 'shopify_draft'
   | 'live'
   | 'failed'
+  | 'publish_failed'
   | 'paused'
   | 'rejected'
 
 export type ListingStatus =
+  | 'draft'
   | 'queued'
   | 'publishing'
   | 'live'

@@ -102,14 +102,6 @@ export default function Dashboard() {
     setActiveSection('catalogue')
   }
 
-  function handleUseMock() {
-    setIsMock(true)
-    setStore(MOCK_STORE)
-    setProducts(MOCK_PRODUCTS)
-    setListings(MOCK_LISTINGS)
-    setLoading(false)
-  }
-
   function handleProductUpdated(updated: Product) {
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p))
   }
@@ -233,8 +225,6 @@ export default function Dashboard() {
                   <h2 className="text-base font-semibold text-gray-900 mb-3">Add Products</h2>
                   <ProductUpload
                     onIngestionStarted={handleIngestionStarted}
-                    useMockData={!isMock}
-                    onUseMock={handleUseMock}
                     isMock={isMock}
                   />
                 </section>

@@ -109,14 +109,14 @@ export function PublicationStatus({ productId, initialListings, isMock }: Public
             <div className="flex items-center gap-2 flex-shrink-0">
               <StatusBadge status={listing.status} pulse />
 
-              {listing.channel_url && listing.status === 'live' && (
+              {listing.channel_url && (listing.status === 'live' || listing.status === 'draft') && (
                 <a
                   href={listing.channel_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline"
                 >
-                  View <ExternalLink className="w-3 h-3" />
+                  {listing.status === 'live' ? 'View' : 'View draft'} <ExternalLink className="w-3 h-3" />
                 </a>
               )}
 

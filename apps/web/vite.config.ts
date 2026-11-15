@@ -10,6 +10,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts: ['127.0.0.1', 'localhost', 'rhythm493-debian.tailac50.ts.net', '100.127.207.123'],
     proxy: {
       '/v1': {
         target: 'http://localhost:8000',

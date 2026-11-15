@@ -67,7 +67,7 @@ def test_publish_requires_approval_and_is_idempotent(client):
     activity = client.get("/v1/activity")
     assert activity.status_code == 200
     event_types = [event["event_type"] for event in activity.json()]
-    assert "catalogue.draft.created.v1" in event_types
-    assert "action.approved.v1" in event_types
-    assert "listing.publish.requested.v1" in event_types
-    assert "listing.published.v1" in event_types
+    assert "catalogue.draft.created" in event_types
+    assert "product.approved" in event_types
+    assert "listing.publish.requested" in event_types
+    assert "listing.published" in event_types

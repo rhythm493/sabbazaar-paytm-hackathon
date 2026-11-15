@@ -25,8 +25,10 @@ const api = axios.create({
 // Error normalizer
 export function extractApiError(err: unknown): string {
   if (err instanceof AxiosError) {
-    const data = err.response?.data as ApiError | undefined
+    const data = err.response?.data as (ApiError & { detail?: string | { message?: string } }) | undefined
     if (data?.message) return data.message
+    if (typeof data?.detail === 'string') return data.detail
+    if (data?.detail?.message) return data.detail.message
     if (err.response?.status === 404) return 'Resource not found.'
     if (err.response?.status === 409) return 'Conflict: resource was updated. Please refresh.'
     if (err.response?.status === 422) return 'Validation error. Check the form fields.'

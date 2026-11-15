@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 
-type Variant = 'draft' | 'approved' | 'publishing' | 'live' | 'failed' | 'paused' | 'queued' | 'blocked' | 'pending' | 'processing' | 'completed' | 'rejected' | 'fixture'
+type Variant = 'draft' | 'shopify_draft' | 'publish_failed' | 'approved' | 'publishing' | 'live' | 'failed' | 'paused' | 'queued' | 'blocked' | 'pending' | 'processing' | 'completed' | 'rejected' | 'fixture'
 
 const VARIANT_STYLES: Record<Variant, string> = {
   draft:      'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -11,6 +11,8 @@ const VARIANT_STYLES: Record<Variant, string> = {
   publishing: 'bg-blue-100 text-blue-800 border-blue-200',
   queued:     'bg-blue-100 text-blue-800 border-blue-200',
   live:       'bg-emerald-100 text-emerald-800 border-emerald-200',
+  shopify_draft: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  publish_failed: 'bg-red-100 text-red-800 border-red-200',
   failed:     'bg-red-100 text-red-800 border-red-200',
   paused:     'bg-orange-100 text-orange-800 border-orange-200',
   blocked:    'bg-red-100 text-red-800 border-red-200',
@@ -27,6 +29,8 @@ const VARIANT_LABELS: Record<Variant, string> = {
   publishing: 'Publishing…',
   queued:     'Queued',
   live:       'Live',
+  shopify_draft: 'Shopify draft',
+  publish_failed: 'Publish failed',
   failed:     'Failed',
   paused:     'Paused',
   blocked:    'Blocked',
