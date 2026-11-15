@@ -4,9 +4,9 @@ Revision ID: beed12e124c9
 Revises:
 Create Date: 2026-11-15 13:47:37.745481
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = 'beed12e124c9'
 down_revision = None

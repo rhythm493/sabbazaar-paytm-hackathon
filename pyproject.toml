@@ -11,9 +11,12 @@ dependencies = [
     "pydantic>=2.7,<3",
     "pydantic-settings>=2.3,<3",
     "httpx>=0.27,<1",
+    "python-multipart>=0.0.9",
+    "langgraph-checkpoint-sqlite>=3.0,<4",
     "sabbazaar-contracts",
     "sabbazaar-commerce",
     "sabbazaar-connectors",
+    "sabbazaar-agents",
 ]
 
 [dependency-groups]
@@ -21,18 +24,21 @@ dev = [
     "pytest>=8,<9",
     "pytest-asyncio>=0.23,<1",
     "ruff>=0.6,<1",
+    "pillow>=10",
 ]
 
 [tool.uv.sources]
 sabbazaar-contracts = { workspace = true }
 sabbazaar-commerce = { workspace = true }
 sabbazaar-connectors = { workspace = true }
+sabbazaar-agents = { workspace = true }
 
 [tool.uv.workspace]
 members = [
     "packages/contracts",
     "packages/commerce",
     "packages/connectors",
+    "packages/agents",
 ]
 
 [tool.pytest.ini_options]
@@ -43,3 +49,10 @@ asyncio_mode = "auto"
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008", "E501"]  # FastAPI File()/Depends() defaults; formatter owns line length
+
+[tool.ruff.lint.isort]
+known-first-party = ["sabbazaar_contracts", "sabbazaar_commerce", "sabbazaar_connectors", "sabbazaar_agents", "apps"]

@@ -1,0 +1,73 @@
+"""Repository protocols. `memory.py` implements them for tests/dev; Ridam's ORM layer replaces it."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Protocol
+
+from sabbazaar_commerce.domain import (
+    Approval,
+    AuditEvent,
+    Book,
+    ConnectorJob,
+    Ingestion,
+    InventoryEntry,
+    Listing,
+)
+
+
+class CatalogueRepository(Protocol):
+    def get(self, book_id: str) -> Book | None: ...
+    def find_by_isbn(self, isbn: str) -> Book | None: ...
+    def find_by_sku(self, sku: str) -> Book | None: ...
+    def list(self) -> list[Book]: ...
+    def add(self, book: Book) -> None: ...
+    def update(self, book: Book) -> None: ...
+
+
+class InventoryRepository(Protocol):
+    def append(self, entry: InventoryEntry) -> bool:
+        """Append a ledger entry. Returns False (and stores nothing) if source_key already exists."""
+        ...
+
+    def on_hand(self, book_id: str) -> int: ...
+
+
+class ListingRepository(Protocol):
+    def get(self, book_id: str, channel: str) -> Listing | None: ...
+    def upsert(self, listing: Listing) -> None: ...
+
+
+class IngestionRepository(Protocol):
+    def add(self, ingestion: Ingestion) -> None: ...
+    def get(self, ingestion_id: str) -> Ingestion | None: ...
+    def find_by_hash(self, content_hash: str) -> Ingestion | None: ...
+    def find_by_idempotency_key(self, key: str) -> Ingestion | None: ...
+    def update(self, ingestion: Ingestion) -> None: ...
+
+
+class ApprovalRepository(Protocol):
+    def add(self, approval: Approval) -> None: ...
+    def for_ingestion(self, ingestion_id: str) -> Approval | None: ...
+
+
+class JobRepository(Protocol):
+    def add(self, job: ConnectorJob) -> None: ...
+    def list_for(self, ingestion_id: str) -> list[ConnectorJob]: ...
+    def update(self, job: ConnectorJob) -> None: ...
+
+
+class AuditRepository(Protocol):
+    def append(self, event: AuditEvent) -> None: ...
+    def list_for(self, correlation_id: str) -> list[AuditEvent]: ...
+
+
+@dataclass
+class Repositories:
+    catalogue: CatalogueRepository
+    inventory: InventoryRepository
+    listings: ListingRepository
+    ingestions: IngestionRepository
+    approvals: ApprovalRepository
+    jobs: JobRepository
+    audit: AuditRepository

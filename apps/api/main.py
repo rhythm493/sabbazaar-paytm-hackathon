@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from sabbazaar_contracts import ProductDraftIn
+from apps.api.bill_intake.routes import install as install_bill_intake
 from sabbazaar_commerce import (
     AuditEvent,
     ConnectorJob,
@@ -23,7 +23,7 @@ from sabbazaar_commerce import (
     product_out,
 )
 from sabbazaar_connectors import FakeShopifyConnector, ShopifyConnector
-from sabbazaar_contracts import ActivityOut
+from sabbazaar_contracts import ActivityOut, ProductDraftIn
 
 
 @asynccontextmanager
@@ -42,6 +42,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+install_bill_intake(app)
+
 
 def get_db():
     with SessionLocal() as db:
@@ -54,7 +56,7 @@ def get_connector():
     try:
         return ShopifyConnector()
     except ValueError as exc:
-        raise HTTPException(503, str(exc))
+        raise HTTPException(503, str(exc)) from exc
 
 
 @app.get("/health/live")

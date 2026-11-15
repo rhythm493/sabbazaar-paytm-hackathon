@@ -3,11 +3,11 @@ import re
 import uuid
 from decimal import Decimal
 
-from sabbazaar_contracts import ProductDraftIn, ProductOut, VariantOut
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from sabbazaar_commerce.models import AuditEvent, Product, ProductVariant, ProposedAction, Store
+from sabbazaar_contracts import ProductDraftIn, ProductOut, VariantOut
 
 
 def audit(db: Session, event_type: str, message: str, entity_type: str | None = None, entity_id: str | None = None, details: dict | None = None) -> None:

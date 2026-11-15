@@ -25,4 +25,4 @@
 - [ ] Docs and `SESSION_LOG.md` are updated.
 - [ ] Simulated behavior is clearly labelled.
 
-The exact install, lint, test, migration, and run commands will be added after project tooling is initialized.
+Install, lint, test, and run commands are listed in `AGENTS.md` under Commands. Migrations belong to the ORM layer and will be added with it.

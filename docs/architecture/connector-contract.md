@@ -6,15 +6,27 @@ Only Shopify is required to be real. The abstraction should be thin and should n
 
 ## Minimal protocol
 
+Implemented in `packages/contracts/channels.py` (synchronous; adapters in `packages/connectors`):
+
 ```python
-class ChannelConnector:
-    async def health_check(self) -> ConnectorHealth: ...
-    async def publish_product(
-        self,
-        draft: ApprovedProductDraft,
-        idempotency_key: str
-    ) -> PublishResult: ...
+class ChannelConnector(Protocol):
+    channel: str
+    simulated: bool
+
+    def health_check(self) -> ConnectorHealth: ...
+    def find_by_sku(self, sku: str) -> ExternalRef | None: ...  # read-only
+    def publish_product(self, payload: ListingPayload, idempotency_key: str) -> ConnectorResult: ...
+    def update_product(
+        self, ref: ExternalRef, price: Decimal, idempotency_key: str
+    ) -> ConnectorResult: ...
+    def set_inventory(
+        self, ref: ExternalRef, quantity: int, expected_current: int | None, idempotency_key: str
+    ) -> ConnectorResult: ...  # compare-and-set
 ```
+
+Errors are normalized to `auth_failed`, `validation_failed`, `rate_limited`, `transient`, `conflict`, `not_configured`, `unknown`. `publish_product` looks the SKU up first and returns the existing product instead of creating a duplicate. `set_inventory` sends the canonical ledger quantity with Shopify `changeFromQuantity` and `@idempotent(key:)`, so a stock change made directly in Shopify surfaces as `conflict` instead of being overwritten.
+
+Ownership: Ridam builds the Shopify OAuth/store-connection flow, which supplies credentials through `ShopifyCredentialsProvider`; the env-var provider is the interim implementation. `FakeConnector` is the labelled simulated channel used by tests and `CHANNEL_MODE=fake`.
 
 If inventory/orders remain in scope, extend only with the methods required by the implemented slice. Do not add placeholder methods that are never tested.
 

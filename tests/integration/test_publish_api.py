@@ -3,13 +3,14 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 
+from alembic import command
+
 TEST_DIR = Path(tempfile.mkdtemp(prefix="sabbazaar-test-"))
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DIR / 'test.db'}"
-os.environ["SHOPIFY_CONNECTOR"] = "fake"
+os.environ.setdefault("DATABASE_URL", f"sqlite:///{TEST_DIR / 'test.db'}")
+os.environ.setdefault("SHOPIFY_CONNECTOR", "fake")
 os.environ["WEB_ORIGINS"] = "http://localhost:5173"
 
 from apps.api.main import app  # noqa: E402

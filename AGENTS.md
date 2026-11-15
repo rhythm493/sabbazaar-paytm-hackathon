@@ -72,6 +72,8 @@ The Python project uses `uv`; the web project uses npm. Verified commands:
 - `uv run --env-file .env alembic upgrade head`
 - `uv run --env-file .env python scripts/seed_demo.py`
 - `uv run pytest`
+- `uv run ruff check .`
+- `uv run --env-file .env uvicorn apps.api.main:app --reload` (API; bill intake under `/v1/ingestions`)
 - `cd apps/web && npm install`
 - `cd apps/web && npm run build`
 
