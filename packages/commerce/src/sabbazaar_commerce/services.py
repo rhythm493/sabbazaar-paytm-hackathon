@@ -65,7 +65,7 @@ def product_out(product: Product) -> ProductOut:
         version=product.version,
         external_product_id=product.external_product_id,
         admin_url=product.admin_url,
-        variants=[VariantOut(id=v.id, external_variant_id=v.external_variant_id, sku=v.sku, price_inr=Decimal(v.price_inr), inventory_item_id=v.inventory_item_id) for v in product.variants],
+        variants=[VariantOut(id=v.id, external_variant_id=v.external_variant_id, sku=v.sku, price_inr=Decimal(v.price_inr), inventory_item_id=v.inventory_item_id, stock_on_hand=v.stock_on_hand) for v in product.variants],
     )
 
 

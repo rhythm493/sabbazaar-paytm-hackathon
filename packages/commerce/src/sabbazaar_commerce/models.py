@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -60,6 +60,7 @@ class ProductVariant(Base, TimestampMixin):
     compare_at_price_inr: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     option_values_json: Mapped[str] = mapped_column(Text, default='["Default Title"]', nullable=False)
     inventory_item_id: Mapped[str | None] = mapped_column(String(255))
+    stock_on_hand: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     product: Mapped[Product] = relationship(back_populates="variants")
 
@@ -105,6 +106,22 @@ class Listing(Base, TimestampMixin):
     external_variant_id: Mapped[str | None] = mapped_column(String(255))
     admin_url: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="draft", nullable=False)
+
+
+class InventoryLedger(Base):
+    """Append-only stock ledger. `source_key` is unique so applying the same bill twice is a no-op."""
+
+    __tablename__ = "inventory_ledger"
+    __table_args__ = (UniqueConstraint("source_key", name="uq_inventory_ledger_source_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    variant_id: Mapped[int] = mapped_column(
+        ForeignKey("product_variants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    delta: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 
 class AuditEvent(Base):

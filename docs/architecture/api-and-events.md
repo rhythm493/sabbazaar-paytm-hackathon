@@ -15,13 +15,15 @@ All endpoints are versioned under `/v1` and scoped to the authenticated/seeded m
 
 ### Ingestion and catalogue
 
-- `POST /v1/ingestions` — upload metadata and create an ingestion job
+- `POST /v1/ingestions` — upload metadata and create an ingestion job (multipart bill/invoice PNG/JPEG/WEBP/PDF)
 - `GET /v1/ingestions/{id}` — status, evidence, errors, and resulting drafts
-- `GET /v1/products`
+- `GET /v1/products` — canonical catalogue; each product carries `variants: [{ sku, price_inr, stock_on_hand, inventory_item_id, … }]` and a rolled-up `stock_on_hand`
 - `POST /v1/products` — manual fallback
 - `GET /v1/products/{id}`
 - `PATCH /v1/products/{id}` — merchant correction with version check
 - `POST /v1/products/{id}/approve`
+
+> Confirmed bill-intake lines are also written into the ORM catalogue: products are upserted by SKU, an append-only `inventory_ledger` row is recorded per (ingestion, line) with a unique `source_key`, and `product_variants.stock_on_hand` is incremented — all idempotent and audited (`bill.catalogue.synced.v1`). Successfully published bill lines additionally upsert ORM `Listing` rows and `products.external_product_id`/`admin_url` (`bill.listing.synced.v1`).
 
 ### Voice commands
 

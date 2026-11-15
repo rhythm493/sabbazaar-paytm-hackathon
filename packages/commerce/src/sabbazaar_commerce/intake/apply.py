@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from collections import defaultdict
 from collections.abc import Callable
 from decimal import Decimal
-from typing import Protocol
+from typing import Any, Protocol
 
 from sabbazaar_commerce.audit_log import record
 from sabbazaar_commerce.domain import Approval, Book, ConnectorJob, InventoryEntry, Listing
@@ -20,6 +21,30 @@ AMBIGUOUS_PUBLISH = (
 NOT_RETRIED = {ErrorCode.CONFLICT.value, ErrorCode.VALIDATION_FAILED.value}
 
 
+def _serialized_jobs(r: Repositories, ingestion_id: str) -> list[dict[str, Any]]:
+    jobs: list[dict[str, Any]] = []
+    for j in r.jobs.list_for(ingestion_id):
+        book = r.catalogue.get(j.book_id) if j.book_id else None
+        jobs.append(
+            {
+                "id": j.id,
+                "line_id": j.line_id,
+                "book_id": j.book_id,
+                "sku": book.sku if book else None,
+                "channel": j.channel,
+                "operation": j.operation,
+                "status": j.status,
+                "admin_url": j.admin_url,
+                "error_code": j.error_code,
+                "attempts": j.attempts,
+            }
+        )
+    return jobs
+
+
+log = logging.getLogger(__name__)
+
+
 class ConnectorLookup(Protocol):
     def get(self, channel: str) -> ChannelConnector: ...
 
@@ -31,10 +56,35 @@ class ApplyError(Exception):
 
 
 class ApplyService:
-    def __init__(self, repos: Repositories, connectors: ConnectorLookup) -> None:
+    def __init__(
+        self,
+        repos: Repositories,
+        connectors: ConnectorLookup,
+        *,
+        on_lines_applied: Callable[[str, list[dict[str, Any]], str], None] | None = None,
+        on_jobs_run: Callable[[str, list[dict[str, Any]], str], None] | None = None,
+    ) -> None:
         self.repos = repos
         self.connectors = connectors
+        self._on_lines_applied = on_lines_applied
+        self._on_jobs_run = on_jobs_run
         self._locks: defaultdict[str, threading.Lock] = defaultdict(threading.Lock)
+
+    def _notify_lines(self, ingestion_id: str, applied: list[dict[str, Any]], actor: str) -> None:
+        if self._on_lines_applied is None:
+            return
+        try:
+            self._on_lines_applied(ingestion_id, applied, actor)
+        except Exception:
+            log.warning("on_lines_applied hook failed for %s", ingestion_id, exc_info=True)
+
+    def _notify_jobs(self, ingestion_id: str, jobs: list[dict[str, Any]], actor: str) -> None:
+        if self._on_jobs_run is None:
+            return
+        try:
+            self._on_jobs_run(ingestion_id, jobs, actor)
+        except Exception:
+            log.warning("on_jobs_run hook failed for %s", ingestion_id, exc_info=True)
 
     def lock(self, ingestion_id: str) -> threading.Lock:
         return self._locks[ingestion_id]
@@ -115,19 +165,22 @@ class ApplyService:
                     summary="Applying confirmed changes",
                 )
             self._apply_lines(ingestion_id, preview, actor)
-        self.run_jobs(ingestion_id)
+        self.run_jobs(ingestion_id, actor)
 
     def _apply_lines(self, ingestion_id: str, preview: Preview, actor: str) -> None:
         """Canonical changes + job creation. Safe to re-run: every write is keyed."""
         r = self.repos
         queued = {j.idempotency_key for j in r.jobs.list_for(ingestion_id)}
+        applied: list[dict[str, Any]] = []
         for pl in preview.lines:
             book = r.catalogue.get(pl.book_id) if pl.book_id else None
+            book_created = False
             if book is None and pl.kind == LineKind.NEW:
                 book = (r.catalogue.find_by_isbn(pl.isbn) if pl.isbn else None) or (
                     r.catalogue.find_by_sku(pl.sku)
                 )
             if book is None:
+                book_created = True
                 book = Book(
                     sku=pl.sku,
                     title=pl.title,
@@ -207,6 +260,22 @@ class ApplyService:
                     event_type="connector.job.queued",
                     summary=f"Queued {change.channel} {change.operation} for {pl.line_id}",
                 )
+            applied.append(
+                {
+                    "line_id": pl.line_id,
+                    "sku": pl.sku,
+                    "title": pl.title,
+                    "author": pl.author,
+                    "publisher": pl.publisher,
+                    "isbn": pl.isbn,
+                    "quantity": pl.quantity_added,
+                    "price": str(pl.price_after),
+                    "mrp": str(pl.mrp) if pl.mrp is not None else None,
+                    "unit_cost": str(pl.unit_cost) if pl.unit_cost is not None else None,
+                    "book_created": book_created,
+                }
+            )
+        self._notify_lines(ingestion_id, applied, actor)
 
     # ---- jobs ----------------------------------------------------------------------------
 
@@ -253,7 +322,7 @@ class ApplyService:
             ErrorCode.VALIDATION_FAILED, f"unknown operation {job.operation}"
         )
 
-    def run_jobs(self, ingestion_id: str) -> None:
+    def run_jobs(self, ingestion_id: str, actor: str = "owner") -> None:
         r = self.repos
         with self.lock(ingestion_id):
             # Publish before inventory/price so later jobs can use the new listing.
@@ -317,6 +386,7 @@ class ApplyService:
                     event_type=f"ingestion.{status.value}",
                     summary=f"Ingestion is now {status.value}",
                 )
+            self._notify_jobs(ingestion_id, _serialized_jobs(r, ingestion_id), actor)
 
     def retry(self, ingestion_id: str) -> None:
         ing = self.repos.ingestions.get(ingestion_id)

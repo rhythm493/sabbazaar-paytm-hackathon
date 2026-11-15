@@ -106,6 +106,11 @@ export function DraftEditor({ product, onUpdated, onApprove, isMock }: DraftEdit
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <StatusBadge status={product.status} />
+            {product.stock_on_hand !== undefined && (
+              <span className="inline-flex items-center text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+                Stock: {product.stock_on_hand}
+              </span>
+            )}
             {hasMissing && (
               <span className="inline-flex items-center gap-1 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">
                 <AlertTriangle className="w-3 h-3" />

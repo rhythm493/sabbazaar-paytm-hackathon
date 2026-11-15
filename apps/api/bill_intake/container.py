@@ -7,6 +7,7 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
+from apps.api.bill_intake.orm_sync import build_orm_sync
 from apps.api.bill_intake.service import IngestionService
 from apps.api.bill_intake.settings import Settings
 from sabbazaar_agents.extraction import Extractor, FixtureExtractor, LLMExtractor
@@ -68,6 +69,8 @@ def build_container(
     registry: ConnectorRegistry | None = None,
     extractor: Extractor | None = None,
     checkpointer: Any = None,
+    on_lines_applied=None,
+    on_jobs_run=None,
 ) -> Container:
     settings = settings or Settings()
     repos = repos or memory_repositories()
@@ -77,6 +80,10 @@ def build_container(
     graph = build_ingestion_graph(
         GraphDeps(repos=repos, extractor=extractor, channels=registry.channels), checkpointer
     )
-    apply = ApplyService(repos, registry)
+    if on_lines_applied is None and on_jobs_run is None:
+        on_lines_applied, on_jobs_run = build_orm_sync(repos)
+    apply = ApplyService(
+        repos, registry, on_lines_applied=on_lines_applied, on_jobs_run=on_jobs_run
+    )
     service = IngestionService(repos, graph, registry, apply, settings.upload_dir)
     return Container(settings=settings, repos=repos, registry=registry, service=service)

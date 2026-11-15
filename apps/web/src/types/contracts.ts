@@ -46,6 +46,15 @@ export interface MissingField {
   reason: string
 }
 
+export interface ProductVariantWeb {
+  id: string
+  sku: string
+  title: string
+  price_inr: number | null
+  inventory_item_id: string | null
+  stock_on_hand: number
+}
+
 export interface Product {
   id: string
   store_id: string
@@ -63,6 +72,10 @@ export interface Product {
   created_at: string
   updated_at: string
   ingestion_id: string | null
+  external_product_id?: string | null
+  admin_url?: string | null
+  variants?: ProductVariantWeb[]
+  stock_on_hand?: number
 }
 
 export interface ProductPatch {

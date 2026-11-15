@@ -36,6 +36,7 @@ class VariantOut(BaseModel):
     sku: str
     price_inr: Decimal
     inventory_item_id: str | None = None
+    stock_on_hand: int = 0
 
 
 class ProductOut(BaseModel):
