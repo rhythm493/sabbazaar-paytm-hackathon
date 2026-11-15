@@ -1,0 +1,14 @@
+{
+  "supplier_name": "Pustak Vitaran Distributors (SAMPLE - synthetic test data)",
+  "invoice_number": "PVD/2026/0412",
+  "invoice_date": "2026-11-10",
+  "currency": "INR",
+  "lines": [
+    {"line_no": 1, "title": "Atomic Habits", "author": "James Clear", "isbn": "978-1-84794-183-1", "publisher": "Random House Business", "quantity": 5, "mrp": "799.00", "unit_cost": "520.00", "confidence": 0.97},
+    {"line_no": 2, "title": "The Psychology of Money", "author": "Morgan Housel", "isbn": "9789390166268", "publisher": "Jaico Publishing House", "quantity": 4, "mrp": "399.00", "unit_cost": "250.00", "confidence": 0.95},
+    {"line_no": 3, "title": "Ikigai", "author": "Hector Garcia", "isbn": "9781786330895", "publisher": "Hutchinson", "quantity": 6, "mrp": "499.00", "unit_cost": "330.00", "confidence": 0.93},
+    {"line_no": 4, "title": "Wings of Fire", "author": "A.P.J. Abdul Kalam", "isbn": null, "publisher": "Universities Press", "quantity": 10, "mrp": "350.00", "unit_cost": "220.00", "confidence": 0.9},
+    {"line_no": 5, "title": "Atomic Habits", "author": "James Clear", "isbn": "9781847941831", "publisher": "Random House Business", "quantity": 3, "mrp": "799.00", "unit_cost": "520.00", "confidence": 0.96},
+    {"line_no": 6, "title": "Sapiens", "author": "Yuval Noah Harari", "isbn": "9780099590089", "publisher": "Vintage", "quantity": 2, "mrp": "599.00", "unit_cost": "400.00", "confidence": 0.88}
+  ]
+}

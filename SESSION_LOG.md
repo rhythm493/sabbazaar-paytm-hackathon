@@ -2,6 +2,30 @@
 
 Keep this file concise. It is an index of consequential work, decisions, verification, and next actions—not a chat transcript. Do not include secrets, private data, or raw chain-of-thought.
 
+## 2026-11-15 — Bill intake backend (branch `feature/bill-intake-backend`)
+
+### Goal
+
+Backend flow: bill upload -> LLM extraction -> match existing/new books -> owner questions -> preview -> confirm -> canonical stock/catalogue update and channel jobs.
+
+### Decisions
+
+- LangGraph workflow with `interrupt()` for owner questions; graph stops at the preview and confirmation runs in a commerce service (ADR 0003).
+- Model layer via LangChain `init_chat_model`, default free Gemini key (ADR 0007).
+- Ridam owns OAuth and the ORM/SQLite persistence; this branch ships repository protocols with an in-memory implementation and the Shopify operations adapter.
+- Design: `docs/superpowers/specs/2026-11-15-bill-intake-design.md`; plan: `docs/superpowers/plans/2026-11-15-bill-intake-backend.md`.
+
+### Verification
+
+- `uv run pytest`: 59 passed (unit rules, connector contract incl. Shopify GraphQL via mock transport, LangGraph interrupt/resume, API integration). `uv run ruff check .` clean.
+- Live smoke on uvicorn with `CHANNEL_MODE=fake`, `MODEL_ENABLED=false`: sample bill -> 4 questions -> preview -> confirm -> 6 simulated channel jobs succeeded, 36 audit events.
+- Whole-branch review fixes: preview loaded inside the confirm lock; interrupted confirm resumes idempotently; jobs never stuck in `running`; ambiguous Shopify publish is never auto-retried; no file paths in errors.
+- Not verified: live Gemini extraction and live Shopify dev-store calls (no credentials in this session).
+
+### Next action
+
+Wire Ridam's ORM repositories and OAuth credentials provider; run an opt-in live Shopify smoke against the dev store; frontend integration.
+
 ## 2026-11-15 — Scope decisions for the six-hour sprint
 
 ### Goal

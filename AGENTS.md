@@ -64,9 +64,18 @@ Do not introduce another datastore, queue, framework, or service without documen
 
 Do not delete or overwrite unfamiliar work. Inspect it first and ask when ownership or intent is unclear.
 
+## Commands
+
+```bash
+uv sync                                   # install (Python >= 3.12)
+uv run pytest                             # offline test suite
+uv run ruff check .                       # lint
+uv run uvicorn api.main:app --reload      # API on http://127.0.0.1:8000 (docs at /docs)
+```
+
 ## Test expectations
 
-The eventual project commands will be recorded here as tooling is initialized. Until then, follow these required test levels:
+Required test levels:
 
 - Domain and policy changes: unit tests
 - Connector changes: shared connector contract suite
